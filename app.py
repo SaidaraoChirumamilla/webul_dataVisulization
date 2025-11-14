@@ -737,6 +737,151 @@ def get_data():
         'orders_list': process_orders_list(orders_data)
     })
 
+def get_orders_sheet_data():
+    """Fetch raw orders sheet from Google Sheets"""
+    return get_sheet_data(ORDERS_SPREADSHEET_ID, ORDERS_WORKSHEET_GID)
+
+def process_orders_list_v2(rows):
+    """Normalize orders for modern view"""
+    orders = []
+    if not rows:
+        return orders
+    for i, row in enumerate(rows):
+        keys = {k.lower(): k for k in row.keys()}
+        oid = None
+        for k in keys:
+            if 'side' in k:
+                continue
+            if any(x in k for x in ['order id', 'orderid', ' id ', 'id', 'trade id', 'transaction id']):
+                v = row[keys[k]]
+                oid = str(v).strip() if v is not None else None
+                if oid:
+                    break
+        cust = None
+        for k in keys:
+            if any(x in k for x in ['customer', 'customer name', 'client', 'account', 'account name', 'name']):
+                v = row[keys[k]]
+                cust = str(v).strip() if v is not None else None
+                if cust:
+                    break
+        status = None
+        for k in keys:
+            if any(x in k for x in ['status', 'state']):
+                v = row[keys[k]]
+                status = str(v).strip() if v is not None else None
+                if status:
+                    break
+        date_val = None
+        for k in keys:
+            if any(x in k for x in ['filled time', 'placed time', 'order date', 'date', 'timestamp']):
+                v = row[keys[k]]
+                date_val = str(v).strip() if v is not None else None
+                if date_val:
+                    if ' ' in date_val:
+                        date_val = date_val.split(' ')[0]
+                    break
+        total = 0.0
+        for k in keys:
+            if any(x in k for x in ['amount', 'value']) and not any(y in k for y in ['qty', 'quantity', 'shares']):
+                total = parse_float(row[keys[k]], 0)
+                if total != 0:
+                    break
+        if total == 0:
+            price = 0.0
+            qty = 0.0
+            for k in keys:
+                if 'price' in k:
+                    price = parse_float(row[keys[k]], 0)
+                    if price != 0:
+                        break
+            for k in keys:
+                if any(x in k for x in ['quantity', 'qty', 'shares', 'filled']):
+                    qty = parse_float(row[keys[k]], 0)
+                    if qty != 0:
+                        break
+            total = price * qty
+        if not oid:
+            oid = f"ORD-{i+1}"
+        orders.append({
+            'id': oid,
+            'customer': cust or 'N/A',
+            'date': date_val or '',
+            'status': status or 'N/A',
+            'total': float(total),
+            'type': 'BUY' if (status and status.lower() == 'buy') or (row.get('Side', '').upper() == 'BUY') else 'SELL',
+            'symbol': row.get('Symbol', row.get('symbol', 'N/A'))
+        })
+    return orders
+
+def aggregate_orders_metrics(orders):
+    """Aggregate KPIs for orders view"""
+    buy_total = sum(o['total'] for o in orders if o['type'] == 'BUY')
+    sell_total = sum(o['total'] for o in orders if o['type'] == 'SELL')
+    profit = sell_total - buy_total
+    return {
+        'buy_total': buy_total,
+        'sell_total': sell_total,
+        'profit': profit,
+        'orders_count': len(orders)
+    }
+
+@app.route('/api/orders')
+def api_orders():
+    """API endpoint for orders view with filters"""
+    orders = process_orders_list_v2(get_orders_sheet_data())
+    # Apply filters from query params
+    symbol_filter = request.args.get('symbol', '').strip().lower()
+    status_filter = request.args.get('status', '').strip().lower()
+    start_date = request.args.get('start', '').strip()
+    end_date = request.args.get('end', '').strip()
+    filtered = []
+    for o in orders:
+        if symbol_filter and symbol_filter not in o['symbol'].lower():
+            continue
+        if status_filter and status_filter not in o['status'].lower():
+            continue
+        if start_date and o['date'] < start_date:
+            continue
+        if end_date and o['date'] > end_date:
+            continue
+        filtered.append(o)
+    metrics = aggregate_orders_metrics(filtered)
+    # Pagination
+    page = int(request.args.get('page', 1))
+    per_page = int(request.args.get('per_page', 50))
+    start = (page - 1) * per_page
+    end = start + per_page
+    paginated = filtered[start:end]
+    return jsonify({
+        'orders': paginated,
+        'metrics': metrics,
+        'page': page,
+        'per_page': per_page,
+        'total': len(filtered)
+    })
+
+@app.route('/api/orders/symbols')
+def api_orders_symbols():
+    """API endpoint for symbol autocomplete"""
+    orders = process_orders_list_v2(get_orders_sheet_data())
+    symbols = sorted(list(set(o['symbol'] for o in orders if o['symbol'] != 'N/A')))
+    query = request.args.get('q', '').lower()
+    if query:
+        symbols = [s for s in symbols if query in s.lower()]
+    return jsonify({'symbols': symbols[:10]})
+
+@app.route('/api/orders/statuses')
+def api_orders_statuses():
+    """API endpoint for status dropdown"""
+    orders = process_orders_list_v2(get_orders_sheet_data())
+    statuses = sorted(list(set(o['status'] for o in orders if o['status'] != 'N/A')))
+    return jsonify({'statuses': statuses})
+
+@app.route('/orders')
+def orders_view():
+    """Modern orders view page"""
+    return render_template('orders.html')
+
 @app.route('/api/positions')
 def api_positions():
     if not USE_POSITIONS_SHEET:

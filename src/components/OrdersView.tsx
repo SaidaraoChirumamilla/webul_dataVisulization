@@ -105,4 +105,97 @@ export const OrdersView: React.FC = () => {
     if (preset === 'today') {
       start = end = now;
     } else if (preset === 'week') {
-      const first = now.getDate() - now.getDay() + 
+      const first = now.getDate() - now.getDay() + 1;
+      start = new Date(now.getFullYear(), now.getMonth(), first);
+      end = new Date(start);
+      end.setDate(start.getDate() + 6);
+    } else if (preset === 'month') {
+      start = new Date(now.getFullYear(), now.getMonth(), 1);
+      end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    } else if (preset === 'quarter') {
+      const q = Math.floor(now.getMonth() / 3);
+      start = new Date(now.getFullYear(), q * 3, 1);
+      end = new Date(now.getFullYear(), (q + 1) * 3, 0);
+    }
+    setFilters((f) => ({ ...f, startDate: start ? start.toISOString().split('T')[0] : null, endDate: end ? end.toISOString().split('T')[0] : null }));
+  };
+
+  const Table: React.FC<{ rows: Order[]; title: string }> = ({ rows, title }) => (
+    <div className="bg-white rounded-xl shadow p-4">
+      <h3 className="text-lg font-semibold mb-3">{title}</h3>
+      <div className="overflow-x-auto">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-50">
+            <tr>
+              {(['symbol', 'quantity', 'price', 'date', 'status'] as (keyof Order)[]).map((k) => (
+                <th key={k} className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" onClick={() => handleSort(k)}>
+                  {k} {sort.key === k ? (sort.dir === 'asc' ? '▲' : '▼') : ''}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {rows.map((o) => (
+              <tr key={o.id} className="hover:bg-gray-50">
+                <td className="px-4 py-2 text-sm font-medium text-gray-900">{o.symbol}</td>
+                <td className="px-4 py-2 text-sm text-gray-500">{o.quantity.toLocaleString()}</td>
+                <td className="px-4 py-2 text-sm text-gray-500">{formatCurrency(o.price)}</td>
+                <td className="px-4 py-2 text-sm text-gray-500">{new Date(o.date).toLocaleDateString()}</td>
+                <td className="px-4 py-2">
+                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${o.status === 'completed' ? 'bg-green-100 text-green-800' : o.status === 'cancelled' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'}`}>{o.status}</span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <SkeletonKPI />
+          <SkeletonKPI />
+          <SkeletonKPI />
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <SkeletonTable />
+          <SkeletonTable />
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return <ErrorState message={error} onRetry={fetchData} />;
+  }
+
+  if (!data) {
+    return <ErrorState message="No orders data available" onRetry={fetchData} />;
+  }
+
+  const buyPageRows = paginate(filtered.buy, buyPage);
+  const sellPageRows = paginate(filtered.sell, sellPage);
+
+  return (
+    <div className="space-y-6">
+      {/* KPIs */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="bg-white rounded-xl shadow p-4">
+          <div className="text-sm font-medium text-gray-500">Total Bought</div>
+          <div className="text-2xl font-bold text-green-600">{formatCurrency(data.buyTotal)}</div>
+          <div className="text-xs text-gray-400 mt-1">vs prev period</div>
+        </div>
+        <div className="bg-white rounded-xl shadow p-4">
+          <div className="text-sm font-medium text-gray-500">Total Sold / Open Value</div>
+          <div className="text-2xl font-bold text-blue-600">{formatCurrency(data.sellTotal)}</div>
+          <div className="text-xs text-gray-400 mt-1">Open: {formatCurrency(data.openPositionValue)}</div>
+        </div>
+        <div className="bg-white rounded-xl shadow p-4">
+          <div className="text-sm font-medium text-gray-500">Profit</div>
+          <div className={`text-2xl font-bold ${data.profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>{formatCurrency(data.profit)}</div>
+          <div className="text-xs text-gray-400 mt-1">vs prev period</div>
+        </div>
+      </div>
