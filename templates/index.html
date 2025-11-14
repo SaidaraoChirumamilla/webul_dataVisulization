@@ -216,6 +216,27 @@
             gap: 20px;
             align-items: end;
         }
+        .autocomplete-container { position: relative; }
+        .autocomplete-list {
+            position: absolute;
+            top: 100%; left: 0; right: 0;
+            background: #fff;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+            z-index: 1000;
+            max-height: 220px;
+            overflow-y: auto;
+            display: none;
+        }
+        .autocomplete-item { padding: 10px 12px; cursor: pointer; }
+        .autocomplete-item:hover { background: #f3f4f6; }
+        .clear-btn {
+            position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+            background: #f3f4f6; border: 1px solid #d1d5db; color: #4b5563;
+            padding: 4px 8px; border-radius: 8px; cursor: pointer; font-size: 12px;
+        }
+        .clear-btn:hover { background: #e5e7eb; }
 
         .filter-group {
             display: flex;
@@ -302,6 +323,39 @@
             display: block;
         }
 
+        /* Comparison mode: show both views side-by-side */
+        .comparison-mode #views-wrapper {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+        }
+        .comparison-mode #view-trends,
+        .comparison-mode #view-orders {
+            display: block;
+        }
+
+        /* Section cards for View 2 */
+        .section-card {
+            background: #ffffff;
+            border-radius: 16px;
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);
+            padding: 20px;
+            margin-bottom: 24px;
+        }
+        .section-title {
+            font-weight: 600;
+            font-size: 1.1em;
+            color: #333;
+            margin-bottom: 12px;
+        }
+        .responsive-table { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        .orders-table thead th { cursor: pointer; user-select: none; }
+        .orders-table tbody tr:hover { background: #f9fafb; }
+        .orders-table th, .orders-table td { padding: 10px; border-bottom: 1px solid #eee; }
+        .orders-table th[aria-sort="ascending"]::after { content: ' \25B2'; }
+        .orders-table th[aria-sort="descending"]::after { content: ' \25BC'; }
+        @media (max-width: 768px) { .section-card { padding: 16px; } }
+
         @media (max-width: 768px) {
             .charts-grid {
                 grid-template-columns: 1fr;
@@ -339,9 +393,10 @@
         <!-- Tabs -->
         <div id="tabs" class="tabs-container" style="display: none;">
             <button class="tab-button active" onclick="switchView('trends')">View 1: Financial Flow Analysis</button>
-            <button class="tab-button" onclick="switchView('orders')">View 2: Order Analysis</button>
+            <button class="tab-button" onclick="switchView('orders')">View 2: Orders Dashboard</button>
         </div>
 
+        <div id="views-wrapper">
         <!-- View 1: Overall Trends -->
         <div id="view-trends" class="view-container active">
             <!-- Summary Metrics -->
@@ -389,190 +444,203 @@
                 </div>
             </div>
         </div>
-
-        <!-- View 2: Order Analysis -->
+        <!-- View 2: Orders Dashboard -->
         <div id="view-orders" class="view-container">
-            <div class="chart-container" id="orders-list-container" style="display:none;">
-                <div class="chart-title">Orders</div>
-                <div id="orders-loading" class="loading" style="display:none;">Loading orders...</div>
-                <div id="orders-empty" class="error" style="display:none;">No orders found</div>
-                <div style="overflow-x:auto;">
-                    <table id="orders-list-table" style="width:100%;border-collapse:collapse;display:none;">
-                        <thead>
-                            <tr style="background:#f5f5f5;">
-                                <th style="padding:12px;text-align:left;border-bottom:2px solid #ddd;">Order ID</th>
-                                <th style="padding:12px;text-align:left;border-bottom:2px solid #ddd;">Customer</th>
-                                <th style="padding:12px;text-align:left;border-bottom:2px solid #ddd;">Order Date</th>
-                                <th style="padding:12px;text-align:left;border-bottom:2px solid #ddd;">Status</th>
-                                <th style="padding:12px;text-align:right;border-bottom:2px solid #ddd;">Total Amount</th>
-                                <th style="padding:12px;text-align:center;border-bottom:2px solid #ddd;">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="orders-list-body"></tbody>
-                    </table>
-                </div>
-            </div>
-            <div id="order-kpi" class="metrics-container" style="display: none;">
-                <div class="metric-card">
-                    <div class="metric-label">Total Profits</div>
-                    <div class="metric-value" id="total-profit">$0.00</div>
-                </div>
-                <div class="metric-card">
-                    <div class="metric-label">Bought Total Value</div>
-                    <div class="metric-value" id="bought-total-value">$0.00</div>
-                </div>
-                <div class="metric-card">
-                    <div class="metric-label">Sell Total Value</div>
-                    <div class="metric-value" id="sell-total-value">$0.00</div>
-                </div>
-                <div class="metric-card">
-                    <div class="metric-label">Total Positions Value</div>
-                    <div class="metric-value" id="total-positions-value">$0.00</div>
-                </div>
-                <div class="metric-card">
-                    <div class="metric-label">Orders Count</div>
-                    <div class="metric-value" id="orders-count">0</div>
-                </div>
-                <div class="metric-card">
-                    <div class="metric-label">Win Rate</div>
-                    <div class="metric-value" id="win-rate">0%</div>
-                </div>
-                <div class="metric-card">
-                    <div class="metric-label">Avg P&L / Trade</div>
-                    <div class="metric-value" id="avg-pnl">$0.00</div>
-                </div>
-            </div>
-
-            <div id="filters-container" class="filters-wrapper" style="display: none;">
-                <div class="filters-title">Filter Options</div>
-                <div class="filters-grid">
-                    <div class="filter-group">
-                        <label for="stock-search" class="filter-label">Stock Symbol</label>
-                        <input type="text" id="stock-search" class="filter-select" placeholder="Search or select symbol..." list="stock-list">
-                        <datalist id="stock-list"></datalist>
-                    </div>
-                    <div class="filter-group">
-                        <label for="status-filter" class="filter-label">Status</label>
-                        <select id="status-filter" class="filter-select">
-                            <option value="">All Statuses</option>
-                        </select>
-                    </div>
-                    <div class="filter-group">
-                        <label for="date-range" class="filter-label">Date Range</label>
-                        <input type="text" id="date-range" class="filter-select" placeholder="Select date range">
-                    </div>
-                    <div class="filter-group">
-                        <label for="quick-range" class="filter-label">Quick Select</label>
-                        <select id="quick-range" class="filter-select">
-                            <option value="">Select</option>
-                            <option value="today">Today</option>
-                            <option value="week">This Week</option>
-                            <option value="month">This Month</option>
-                            <option value="mtd">MTD</option>
-                            <option value="qtd">QTD</option>
-                            <option value="ytd">YTD</option>
-                        </select>
-                    </div>
-                    <div class="filter-group">
-                        <label for="refresh-interval" class="filter-label">Auto Refresh (min)</label>
-                        <input type="number" id="refresh-interval" class="filter-select" min="0" step="1" placeholder="5">
-                    </div>
-                    <div class="filter-group">
-                        <button class="clear-filters-btn" onclick="clearFilters()">Reset All</button>
+            <!-- 1) Filters Section -->
+            <div id="orders-filters-section" class="section-card">
+                <div class="section-title">Filters</div>
+                <div id="filters-container" class="filters-wrapper" style="display: none;">
+                    <div class="filters-title">Filter Options</div>
+                    <div class="filters-grid">
+                        <div class="filter-group">
+                            <label for="stock-search" class="filter-label">Stock Symbol</label>
+                            <div class="autocomplete-container">
+                                <input type="text" id="stock-search" class="filter-select" placeholder="Type to search symbols..." autocomplete="off" list="stock-list">
+                                <button id="stock-clear" class="clear-btn" type="button">Clear</button>
+                                <div id="stock-autocomplete" class="autocomplete-list"></div>
+                            </div>
+                            <datalist id="stock-list"></datalist>
+                        </div>
+                        <div class="filter-group">
+                            <label for="status-filter" class="filter-label">Status</label>
+                            <select id="status-filter" class="filter-select">
+                                <option value="">All Statuses</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label for="date-range" class="filter-label">Date Range</label>
+                            <input type="text" id="date-range" class="filter-select" placeholder="Select date range">
+                        </div>
+                        <div class="filter-group">
+                            <label for="quick-range" class="filter-label">Quick Select</label>
+                            <select id="quick-range" class="filter-select">
+                                <option value="">Select</option>
+                                <option value="today">Today</option>
+                                <option value="week">This Week</option>
+                                <option value="month">This Month</option>
+                                <option value="mtd">MTD</option>
+                                <option value="qtd">QTD</option>
+                                <option value="ytd">YTD</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label for="refresh-interval" class="filter-label">Auto Refresh (min)</label>
+                            <input type="number" id="refresh-interval" class="filter-select" min="0" step="1" placeholder="5">
+                        </div>
+                        <div class="filter-group">
+                            <button class="clear-filters-btn" onclick="clearFilters()">Reset All</button>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <div id="order-tables" style="display: none; max-width: 1400px; margin: 0 auto;">
-                <div style="display:flex;gap:10px;justify-content:flex-end;margin-bottom:10px;">
-                    <button class="clear-filters-btn" id="export-csv">Export CSV</button>
-                    <button class="clear-filters-btn" id="export-xlsx">Export Excel</button>
-                    <button class="clear-filters-btn" id="export-pdf">Export PDF</button>
+            <!-- 2) KPI Metrics Section -->
+            <div id="orders-kpi-section" class="section-card">
+                <div class="section-title">Key Metrics</div>
+                <div id="order-kpi" class="metrics-container" style="display: none;">
+                    <div class="metric-card">
+                        <div class="metric-label">Total Profits</div>
+                        <div class="metric-value" id="total-profit">$0.00</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Bought Total Value</div>
+                        <div class="metric-value" id="bought-total-value">$0.00</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Sell Total Value</div>
+                        <div class="metric-value" id="sell-total-value">$0.00</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Total Positions Value</div>
+                        <div class="metric-value" id="total-positions-value">$0.00</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Orders Count</div>
+                        <div class="metric-value" id="orders-count">0</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Win Rate</div>
+                        <div class="metric-value" id="win-rate">0%</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Avg P&L / Trade</div>
+                        <div class="metric-value" id="avg-pnl">$0.00</div>
+                    </div>
                 </div>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 30px;">
+            </div>
+
+            <!-- 3) Orders Data Section -->
+            <div id="orders-data-section" class="section-card">
+                <div class="section-title">Orders Data</div>
+                
+
+                <div id="order-tables" style="display: none; max-width: 1400px; margin: 0 auto;">
+                    <div style="display:flex;gap:10px;justify-content:flex-end;margin-bottom:10px;">
+                        <button class="clear-filters-btn" id="export-csv">Export CSV</button>
+                        <button class="clear-filters-btn" id="export-xlsx">Export Excel</button>
+                        <button class="clear-filters-btn" id="export-pdf">Export PDF</button>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 30px;">
+                        <div class="chart-container">
+                            <div class="chart-title">Buy Orders</div>
+                            <div class="responsive-table">
+                                <table id="buy-orders-table" class="orders-table" role="table" aria-label="Buy Orders Table" style="width: 100%; border-collapse: collapse;">
+                                    <thead>
+                                        <tr>
+                                            <th scope="col" data-sort-key="symbol" aria-sort="none">Symbol</th>
+                                            <th scope="col" data-sort-key="name" aria-sort="none">Stock Name</th>
+                                            <th scope="col" data-sort-key="quantity" aria-sort="none" style="text-align: right;">Quantity</th>
+                                            <th scope="col" data-sort-key="price" aria-sort="none" style="text-align: right;">Price</th>
+                                            <th scope="col" data-sort-key="total" aria-sort="none" style="text-align: right;">Total Price</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="buy-orders-body">
+                                        <tr><td colspan="5" style="padding: 20px; text-align: center; color: #999;">No buy orders found</td></tr>
+                                    </tbody>
+                                    <tfoot>
+                                        <tr>
+                                            <td colspan="2" style="text-align:right;font-weight:600;">Totals:</td>
+                                            <td id="buy-total-qty" style="text-align:right;">0</td>
+                                            <td></td>
+                                            <td id="buy-total-amount" style="text-align:right;">$0.00</td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                            <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:8px;">
+                                <button class="clear-filters-btn" id="prev-buy">Prev</button>
+                                <span id="buy-page-info" style="align-self:center;color:#555;">Page 1</span>
+                                <button class="clear-filters-btn" id="next-buy">Next</button>
+                            </div>
+                        </div>
+
+                        <div class="chart-container">
+                            <div class="chart-title">Sell Orders</div>
+                            <div class="responsive-table">
+                                <table id="sell-orders-table" class="orders-table" role="table" aria-label="Sell Orders Table" style="width: 100%; border-collapse: collapse;">
+                                    <thead>
+                                        <tr>
+                                            <th scope="col" data-sort-key="symbol" aria-sort="none">Symbol</th>
+                                            <th scope="col" data-sort-key="name" aria-sort="none">Stock Name</th>
+                                            <th scope="col" data-sort-key="quantity" aria-sort="none" style="text-align: right;">Quantity</th>
+                                            <th scope="col" data-sort-key="price" aria-sort="none" style="text-align: right;">Price</th>
+                                            <th scope="col" data-sort-key="total" aria-sort="none" style="text-align: right;">Total Price</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="sell-orders-body">
+                                        <tr><td colspan="5" style="padding: 20px; text-align: center; color: #999;">No sell orders found</td></tr>
+                                    </tbody>
+                                    <tfoot>
+                                        <tr>
+                                            <td colspan="2" style="text-align:right;font-weight:600;">Totals:</td>
+                                            <td id="sell-total-qty" style="text-align:right;">0</td>
+                                            <td></td>
+                                            <td id="sell-total-amount" style="text-align:right;">$0.00</td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                            <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:8px;">
+                                <button class="clear-filters-btn" id="prev-sell">Prev</button>
+                                <span id="sell-page-info" style="align-self:center;color:#555;">Page 1</span>
+                                <button class="clear-filters-btn" id="next-sell">Next</button>
+                            </div>
+                        </div>
+                    </div>
                     <div class="chart-container">
-                        <div class="chart-title">Buy Orders</div>
-                        <div style="overflow-x: auto;">
-                            <table id="buy-orders-table" style="width: 100%; border-collapse: collapse;">
+                        <div class="chart-title">Top 5 Traded Securities by Volume</div>
+                        <div class="chart-wrapper" style="height: 300px;">
+                            <canvas id="topSymbolsChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <div class="chart-title" style="display:flex;justify-content:space-between;align-items:center;">
+                            <span>Open Positions</span>
+                            <button class="clear-filters-btn" id="refresh-prices">Refresh Prices</button>
+                        </div>
+                        <div class="responsive-table">
+                            <table style="width:100%;border-collapse:collapse;">
                                 <thead>
-                                    <tr style="background: #f5f5f5;">
-                                        <th style="padding: 12px; text-align: left; border-bottom: 2px solid #ddd;">Symbol</th>
-                                        <th style="padding: 12px; text-align: right; border-bottom: 2px solid #ddd;">Price</th>
-                                        <th style="padding: 12px; text-align: right; border-bottom: 2px solid #ddd;">Quantity</th>
-                                        <th style="padding: 12px; text-align: right; border-bottom: 2px solid #ddd;">Total Value</th>
-                                        <th style="padding: 12px; text-align: center; border-bottom: 2px solid #ddd;">Date of Buy</th>
+                                    <tr style="background:#f5f5f5;">
+                                        <th style="padding:12px;text-align:left;border-bottom:2px solid #ddd;">Symbol</th>
+                                        <th style="padding:12px;text-align:right;border-bottom:2px solid #ddd;">Quantity</th>
+                                        <th style="padding:12px;text-align:right;border-bottom:2px solid #ddd;">Cost Basis</th>
+                                        <th style="padding:12px;text-align:right;border-bottom:2px solid #ddd;">Market Price</th>
+                                        <th style="padding:12px;text-align:right;border-bottom:2px solid #ddd;">Market Value</th>
+                                        <th style="padding:12px;text-align:right;border-bottom:2px solid #ddd;">Gain/Loss %</th>
+                                        <th style="padding:12px;text-align:center;border-bottom:2px solid #ddd;">Duration</th>
                                     </tr>
                                 </thead>
-                                <tbody id="buy-orders-body">
-                                    <tr><td colspan="5" style="padding: 20px; text-align: center; color: #999;">No buy orders found</td></tr>
+                                <tbody id="positions-body">
+                                    <tr><td colspan="7" style="padding:20px;text-align:center;color:#999;">No open positions</td></tr>
                                 </tbody>
                             </table>
                         </div>
-                        <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:8px;">
-                            <button class="clear-filters-btn" id="prev-buy">Prev</button>
-                            <span id="buy-page-info" style="align-self:center;color:#555;">Page 1</span>
-                            <button class="clear-filters-btn" id="next-buy">Next</button>
-                        </div>
-                    </div>
-
-                    <div class="chart-container">
-                        <div class="chart-title">Sell Orders</div>
-                        <div style="overflow-x: auto;">
-                            <table id="sell-orders-table" style="width: 100%; border-collapse: collapse;">
-                                <thead>
-                                    <tr style="background: #f5f5f5;">
-                                        <th style="padding: 12px; text-align: left; border-bottom: 2px solid #ddd;">Symbol</th>
-                                        <th style="padding: 12px; text-align: right; border-bottom: 2px solid #ddd;">Price</th>
-                                        <th style="padding: 12px; text-align: right; border-bottom: 2px solid #ddd;">Quantity</th>
-                                        <th style="padding: 12px; text-align: right; border-bottom: 2px solid #ddd;">Total Value</th>
-                                        <th style="padding: 12px; text-align: right; border-bottom: 2px solid #ddd;">Profit</th>
-                                        <th style="padding: 12px; text-align: center; border-bottom: 2px solid #ddd;">Date of Sell</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="sell-orders-body">
-                                    <tr><td colspan="6" style="padding: 20px; text-align: center; color: #999;">No sell orders found</td></tr>
-                                </tbody>
-                            </table>
-                        </div>
-                        <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:8px;">
-                            <button class="clear-filters-btn" id="prev-sell">Prev</button>
-                            <span id="sell-page-info" style="align-self:center;color:#555;">Page 1</span>
-                            <button class="clear-filters-btn" id="next-sell">Next</button>
-                        </div>
-                    </div>
-                </div>
-                <div class="chart-container">
-                    <div class="chart-title">Top 5 Traded Securities by Volume</div>
-                    <div class="chart-wrapper" style="height: 300px;">
-                        <canvas id="topSymbolsChart"></canvas>
-                    </div>
-                </div>
-                <div class="chart-container">
-                    <div class="chart-title" style="display:flex;justify-content:space-between;align-items:center;">
-                        <span>Open Positions</span>
-                        <button class="clear-filters-btn" id="refresh-prices">Refresh Prices</button>
-                    </div>
-                    <div style="overflow-x:auto;">
-                        <table style="width:100%;border-collapse:collapse;">
-                            <thead>
-                                <tr style="background:#f5f5f5;">
-                                    <th style="padding:12px;text-align:left;border-bottom:2px solid #ddd;">Symbol</th>
-                                    <th style="padding:12px;text-align:right;border-bottom:2px solid #ddd;">Quantity</th>
-                                    <th style="padding:12px;text-align:right;border-bottom:2px solid #ddd;">Cost Basis</th>
-                                    <th style="padding:12px;text-align:right;border-bottom:2px solid #ddd;">Market Price</th>
-                                    <th style="padding:12px;text-align:right;border-bottom:2px solid #ddd;">Market Value</th>
-                                    <th style="padding:12px;text-align:right;border-bottom:2px solid #ddd;">Gain/Loss %</th>
-                                    <th style="padding:12px;text-align:center;border-bottom:2px solid #ddd;">Duration</th>
-                                </tr>
-                            </thead>
-                            <tbody id="positions-body">
-                                <tr><td colspan="7" style="padding:20px;text-align:center;color:#999;">No open positions</td></tr>
-                            </tbody>
-                        </table>
                     </div>
                 </div>
             </div>
         </div>
+        </div><!-- end views-wrapper -->
 
             
         </div>
@@ -611,21 +679,7 @@
                 // Display summary metrics
                 displayMetrics(data.summary_metrics);
                 
-                // Display order analysis
-                displayOrderAnalysis(data.order_analysis);
-                if (!filterWorker) {
-                    filterWorker = new Worker('/static/js/processing.worker.js');
-                    filterWorker.onmessage = (evt) => {
-                        if (evt.data && evt.data.type === 'FILTER_RESULT') {
-                            const r = evt.data.data;
-                            lastFilteredBuy = r.filteredBuyOrders || [];
-                            lastFilteredSell = r.filteredSellOrders || [];
-                            renderFilteredTables(r.filteredBuyOrders, r.filteredSellOrders, r.totals);
-                            renderOrderMetrics(r.metrics, r.topSymbols);
-                        }
-                    };
-                    filterWorker.postMessage({ type: 'INIT', payload: { buy_orders: data.order_analysis.buy_orders, sell_orders: data.order_analysis.sell_orders } });
-                }
+                // View 2 is now Orders Dashboard embedded via iframe; skip legacy order analysis setup
 
                 // Show charts for active view
                 createCharts(data);
@@ -667,7 +721,16 @@
             buttons.forEach(btn => btn.classList.remove('active'));
             if (viewName === 'trends' && buttons[0]) buttons[0].classList.add('active');
             if (viewName === 'orders' && buttons[1]) buttons[1].classList.add('active');
+            if (viewName === 'compare' && buttons[2]) buttons[2].classList.add('active');
             document.querySelectorAll('.view-container').forEach(view => { view.classList.remove('active'); });
+            document.body.classList.remove('comparison-mode');
+            if (viewName === 'compare') {
+                document.body.classList.add('comparison-mode');
+                document.getElementById('view-trends').classList.add('active');
+                document.getElementById('view-orders').classList.add('active');
+                if (window.currentData) { createCharts(window.currentData, 'compare'); }
+                return;
+            }
             const selectedView = document.getElementById(`view-${viewName}`);
             if (selectedView) { selectedView.classList.add('active'); }
             if (window.currentData) { createCharts(window.currentData); }
@@ -678,6 +741,8 @@
 
         function clearFilters() {
             const stockSearch = document.getElementById('stock-search');
+            const stockAutocomplete = document.getElementById('stock-autocomplete');
+            let autocompleteTimer;
             const statusFilter = document.getElementById('status-filter');
             const dateRange = document.getElementById('date-range');
             const quickRange = document.getElementById('quick-range');
@@ -692,7 +757,7 @@
             applyFiltersWithWorker();
         }
 
-        function createCharts(data) {
+        function createCharts(data, mode) {
             // Store data globally
             window.currentData = data;
             
@@ -706,8 +771,12 @@
             const activeView = document.querySelector('.view-container.active');
             if (!activeView) return;
             
+            if (mode === 'compare') {
+                createTrendsCharts(data);
+                createOrderAnalysisCharts(data);
+                return;
+            }
             const viewId = activeView.id;
-            
             if (viewId === 'view-trends') {
                 createTrendsCharts(data);
             } else if (viewId === 'view-orders') {
@@ -965,13 +1034,19 @@
             
             kpiDiv.style.display = 'grid';
 
-            const listContainer = document.getElementById('orders-list-container');
-            const listLoading = document.getElementById('orders-loading');
-            const listEmpty = document.getElementById('orders-empty');
-            const listTable = document.getElementById('orders-list-table');
-            listContainer.style.display = 'block';
-            listLoading.style.display = 'block';
-            renderOrdersList(ordersList);
+            
+
+            // Build symbol -> name mapping for Stock Name resolution
+            window.symbolNameMap = {};
+            try {
+                ordersList.forEach(o => {
+                    const sym = o.symbol || o.Symbol;
+                    const name = o.customer || o.Name;
+                    if (sym && name && !window.symbolNameMap[sym]) {
+                        window.symbolNameMap[sym] = String(name);
+                    }
+                });
+            } catch {}
             
             // Setup filters
             const filtersContainer = document.getElementById('filters-container');
@@ -1030,6 +1105,43 @@
                 persist();
                 applyFiltersWithWorker();
             };
+
+            stockSearch.addEventListener('input', function(e) {
+                const q = (e.target.value || '').trim();
+                clearTimeout(autocompleteTimer);
+                if (q.length === 0) { stockAutocomplete.style.display = 'none'; return; }
+                autocompleteTimer = setTimeout(() => {
+                    const list = (window.availableSymbols || []).filter(s => s.toLowerCase().includes(q.toLowerCase())).slice(0, 10);
+                    if (list.length === 0) { stockAutocomplete.style.display = 'none'; return; }
+                    stockAutocomplete.innerHTML = list.map(s => `<div class="autocomplete-item" data-symbol="${s}">${s}</div>`).join('');
+                    stockAutocomplete.style.display = 'block';
+                }, 200);
+            });
+
+            stockAutocomplete.addEventListener('click', function(e) {
+                if (e.target.classList.contains('autocomplete-item')) {
+                    const sym = e.target.getAttribute('data-symbol') || '';
+                    stockSearch.value = sym;
+                    stockAutocomplete.style.display = 'none';
+                    lastFilter.search = sym;
+                    persist();
+                    applyFiltersWithWorker();
+                }
+            });
+
+            document.addEventListener('click', function(e) {
+                if (!stockSearch.contains(e.target) && !stockAutocomplete.contains(e.target)) {
+                    stockAutocomplete.style.display = 'none';
+                }
+            });
+
+            document.getElementById('stock-clear').addEventListener('click', function() {
+                stockSearch.value = '';
+                stockAutocomplete.style.display = 'none';
+                lastFilter.search = '';
+                persist();
+                applyFiltersWithWorker();
+            });
             dateRange.onchange = function() {
                 const parts = (this.value || '').split(' to ');
                 lastFilter.start = parts[0] || null;
@@ -1057,6 +1169,9 @@
                 persist();
                 applyFiltersWithWorker();
             };
+            attachSortHandlers();
+            updateSortHeaders('buy-orders-table', buySortKey, buySortDir);
+            updateSortHeaders('sell-orders-table', sellSortKey, sellSortDir);
             applyFiltersWithWorker();
             document.getElementById('order-tables').style.display = 'block';
             const refreshBtn = document.getElementById('refresh-prices');
@@ -1151,43 +1266,51 @@
                 buyBody.innerHTML = '<tr><td colspan="5" style="padding: 20px; text-align: center; color: #999;">No buy orders found</td></tr>';
             } else {
                 buyBody.innerHTML = buySlice.map(order => {
-                    const dateValue = order.date || '';
-                    const dayValue = formatDate(dateValue);
+                    const name = resolveStockName(order.symbol || '');
                     return `
-                    <tr style="border-bottom: 1px solid #eee;">
-                        <td style="padding: 10px; font-weight: 500;">${order.symbol || 'N/A'}</td>
-                        <td style="padding: 10px; text-align: right;">$${(order.price || 0).toFixed(2)}</td>
-                        <td style="padding: 10px; text-align: right;">${(order.quantity || 0).toFixed(2)}</td>
-                        <td style="padding: 10px; text-align: right;">$${(order.total_value || 0).toFixed(2)}</td>
-                        <td style="padding: 10px; text-align: center; color: #666; font-size: 0.9em;">${dayValue}</td>
+                    <tr>
+                        <td>${order.symbol || 'N/A'}</td>
+                        <td>${name}</td>
+                        <td style="text-align:right;">${(order.quantity || 0).toFixed(2)}</td>
+                        <td style="text-align:right;">$${(order.price || 0).toFixed(2)}</td>
+                        <td style="text-align:right;">$${(order.total_value || 0).toFixed(2)}</td>
                     </tr>
                 `;
                 }).join('');
             }
+            const buyTotalQty = buySlice.reduce((s,o)=>s+(o.quantity||0),0);
+            const buyTotalAmt = buySlice.reduce((s,o)=>s+(o.total_value||0),0);
+            const buyQtyEl = document.getElementById('buy-total-qty');
+            const buyAmtEl = document.getElementById('buy-total-amount');
+            if (buyQtyEl) buyQtyEl.textContent = buyTotalQty.toFixed(2);
+            if (buyAmtEl) buyAmtEl.textContent = formatCurrency(buyTotalAmt);
             const sellBody = document.getElementById('sell-orders-body');
             const sellStart = (sellPage - 1) * pageSize;
             const sellSlice = filteredSellOrders.slice(sellStart, sellStart + pageSize);
             const sellInfo = document.getElementById('sell-page-info');
             if (sellInfo) sellInfo.textContent = `Page ${sellPage}`;
             if (sellSlice.length === 0) {
-                sellBody.innerHTML = '<tr><td colspan="6" style="padding: 20px; text-align: center; color: #999;">No sell orders found</td></tr>';
+                sellBody.innerHTML = '<tr><td colspan="5" style="padding: 20px; text-align: center; color: #999;">No sell orders found</td></tr>';
             } else {
                 sellBody.innerHTML = sellSlice.map(order => {
-                    const profit = order.profit || 0;
-                    const dateValue = order.date || '';
-                    const dayValue = formatDate(dateValue);
+                    const name = resolveStockName(order.symbol || '');
                     return `
-                    <tr style="border-bottom: 1px solid #eee;">
-                        <td style="padding: 10px; font-weight: 500;">${order.symbol || 'N/A'}</td>
-                        <td style="padding: 10px; text-align: right;">$${(order.price || 0).toFixed(2)}</td>
-                        <td style="padding: 10px; text-align: right;">${(order.quantity || 0).toFixed(2)}</td>
-                        <td style="padding: 10px; text-align: right;">$${(order.total_value || 0).toFixed(2)}</td>
-                        <td style="padding: 10px; text-align: right; color: ${profit >= 0 ? '#10b981' : '#ef4444'}; font-weight: 500;">${formatCurrency(profit)}</td>
-                        <td style="padding: 10px; text-align: center; color: #666; font-size: 0.9em;">${dayValue}</td>
+                    <tr>
+                        <td>${order.symbol || 'N/A'}</td>
+                        <td>${name}</td>
+                        <td style="text-align:right;">${(order.quantity || 0).toFixed(2)}</td>
+                        <td style="text-align:right;">$${(order.price || 0).toFixed(2)}</td>
+                        <td style="text-align:right;">$${(order.total_value || 0).toFixed(2)}</td>
                     </tr>
                 `;
                 }).join('');
             }
+            const sellTotalQty = sellSlice.reduce((s,o)=>s+(o.quantity||0),0);
+            const sellTotalAmt = sellSlice.reduce((s,o)=>s+(o.total_value||0),0);
+            const sellQtyEl = document.getElementById('sell-total-qty');
+            const sellAmtEl = document.getElementById('sell-total-amount');
+            if (sellQtyEl) sellQtyEl.textContent = sellTotalQty.toFixed(2);
+            if (sellAmtEl) sellAmtEl.textContent = formatCurrency(sellTotalAmt);
         }
 
         function renderOrderMetrics(metrics, topSymbols) {
@@ -1254,9 +1377,92 @@
             });
         }
 
+        function resolveStockName(symbol) {
+            if (!symbol) return 'N/A';
+            const map = window.symbolNameMap || {};
+            if (map[symbol]) return map[symbol];
+            return symbol; // fallback
+        }
+
+        let buySortKey = 'symbol';
+        let buySortDir = 'asc';
+        let sellSortKey = 'symbol';
+        let sellSortDir = 'asc';
+
+        function sortOrders(arr, key, dir) {
+            const getVal = (o) => {
+                if (key === 'name') return resolveStockName(o.symbol || '');
+                if (key === 'quantity') return o.quantity || 0;
+                if (key === 'price') return o.price || 0;
+                if (key === 'total') return o.total_value || 0;
+                return (o.symbol || '').toUpperCase();
+            };
+            const mult = dir === 'desc' ? -1 : 1;
+            return [...arr].sort((a,b) => {
+                const va = getVal(a); const vb = getVal(b);
+                if (typeof va === 'string' && typeof vb === 'string') return va.localeCompare(vb) * mult;
+                return (va - vb) * mult;
+            });
+        }
+
+        function updateSortHeaders(tableId, key, dir) {
+            const thead = document.querySelector(`#${tableId} thead`);
+            if (!thead) return;
+            thead.querySelectorAll('th').forEach(th => th.setAttribute('aria-sort', 'none'));
+            const active = thead.querySelector(`th[data-sort-key="${key}"]`);
+            if (active) active.setAttribute('aria-sort', dir === 'desc' ? 'descending' : 'ascending');
+        }
+
+        function attachSortHandlers() {
+            const buyThead = document.querySelector('#buy-orders-table thead');
+            const sellThead = document.querySelector('#sell-orders-table thead');
+            if (buyThead) buyThead.querySelectorAll('th').forEach(th => {
+                th.onclick = function() {
+                    const key = this.getAttribute('data-sort-key');
+                    if (!key) return;
+                    buySortDir = (buySortKey === key && buySortDir === 'asc') ? 'desc' : 'asc';
+                    buySortKey = key;
+                    updateSortHeaders('buy-orders-table', buySortKey, buySortDir);
+                    applyFiltersWithWorker();
+                };
+            });
+            if (sellThead) sellThead.querySelectorAll('th').forEach(th => {
+                th.onclick = function() {
+                    const key = this.getAttribute('data-sort-key');
+                    if (!key) return;
+                    sellSortDir = (sellSortKey === key && sellSortDir === 'asc') ? 'desc' : 'asc';
+                    sellSortKey = key;
+                    updateSortHeaders('sell-orders-table', sellSortKey, sellSortDir);
+                    applyFiltersWithWorker();
+                };
+            });
+        }
+
         function applyFiltersWithWorker() {
-            if (!filterWorker) return;
-            filterWorker.postMessage({ type: 'FILTER', payload: lastFilter });
+            const data = window.currentData || {};
+            const orderAnalysis = data.order_analysis || {};
+            const buyOrders = orderAnalysis.buy_orders || [];
+            const sellOrders = orderAnalysis.sell_orders || [];
+            const search = (lastFilter.search || '').toLowerCase();
+            const status = lastFilter.status || '';
+            const filteredBuy = buyOrders.filter(o => {
+                const sm = !search || (o.symbol || '').toLowerCase().includes(search);
+                const st = !status || (o.status || '') === status;
+                return sm && st;
+            });
+            const filteredSell = sellOrders.filter(o => {
+                const sm = !search || (o.symbol || '').toLowerCase().includes(search);
+                const st = !status || (o.status || '') === status;
+                return sm && st;
+            });
+            window.lastFilteredBuy = sortOrders(filteredBuy, buySortKey, buySortDir);
+            window.lastFilteredSell = sortOrders(filteredSell, sellSortKey, sellSortDir);
+            const totals = {
+                totalBought: filteredBuy.reduce((s,o)=>s+(o.total_value||0),0),
+                totalSold: filteredSell.reduce((s,o)=>s+(o.total_value||0),0),
+                totalProfit: filteredSell.reduce((s,o)=>s+(o.total_value||0),0) - filteredBuy.reduce((s,o)=>s+(o.total_value||0),0)
+            };
+            renderFilteredTables(window.lastFilteredBuy, window.lastFilteredSell, totals);
         }
 
         function calculatePositions(orderAnalysis) {
@@ -1322,7 +1528,8 @@
         function displayOrderAnalysis(orderAnalysis) {
             const stockList = document.getElementById('stock-list');
             stockList.innerHTML = '';
-            const uniqueSymbols = [...new Set(orderAnalysis.buy_orders.map(o => o.symbol).concat(orderAnalysis.sell_orders.map(o => o.symbol)))];
+            const uniqueSymbols = [...new Set(orderAnalysis.buy_orders.map(o => o.symbol).concat(orderAnalysis.sell_orders.map(o => o.symbol)))].filter(Boolean).sort();
+            window.availableSymbols = uniqueSymbols;
             uniqueSymbols.forEach(symbol => {
                 const option = document.createElement('option');
                 option.value = symbol;

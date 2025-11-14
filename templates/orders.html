@@ -766,6 +766,7 @@
                         <button class="preset-btn" data-preset="month">This Month</button>
                         <button class="preset-btn" data-preset="quarter">Last Quarter</button>
                     </div>
+                    
                 </div>
             </div>
             <div class="filter-actions">
@@ -888,4 +889,524 @@
         let filteredData = { buy: [], sell: [] };
         let currentPage = { buy: 1, sell: 1 };
         const perPage = 50;
-        let sortColumn = {
+        let sortColumn = { buy: null, sell: null };
+        let sortDirection = { buy: 'asc', sell: 'asc' };
+        let currentFilters = {
+            symbol: '',
+            status: '',
+            startDate: '',
+            endDate: ''
+        };
+
+        // Utility functions
+        function formatCurrency(value) {
+            return new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: 'USD',
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }).format(value);
+        }
+
+        function formatNumber(value) {
+            return new Intl.NumberFormat('en-US').format(value);
+        }
+
+        function formatDate(dateStr) {
+            if (!dateStr) return 'N/A';
+            try {
+                const date = new Date(dateStr);
+                return date.toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric'
+                });
+            } catch {
+                return dateStr;
+            }
+        }
+
+        function getStatusClass(status) {
+            const statusLower = status.toLowerCase();
+            if (statusLower.includes('filled') || statusLower.includes('completed')) return 'status-filled';
+            if (statusLower.includes('pending')) return 'status-pending';
+            if (statusLower.includes('cancelled')) return 'status-cancelled';
+            return 'status-filled';
+        }
+
+        function showLoading(section) {
+            document.getElementById(`${section}-loading`).style.display = 'flex';
+        }
+
+        function hideLoading(section) {
+            document.getElementById(`${section}-loading`).style.display = 'none';
+        }
+
+        function showError(message) {
+            const errorEl = document.getElementById('error');
+            errorEl.textContent = message;
+            errorEl.style.display = 'block';
+            document.getElementById('loading').style.display = 'none';
+        }
+
+        function hideError() {
+            document.getElementById('error').style.display = 'none';
+        }
+
+        // API functions
+        async function fetchOrders() {
+            try {
+                const params = new URLSearchParams();
+                if (currentFilters.symbol) params.append('symbol', currentFilters.symbol);
+                if (currentFilters.status) params.append('status', currentFilters.status);
+                if (currentFilters.startDate) params.append('start', currentFilters.startDate);
+                if (currentFilters.endDate) params.append('end', currentFilters.endDate);
+                
+                const response = await fetch(`/api/orders?${params}`);
+                if (!response.ok) throw new Error('Failed to fetch orders');
+                
+                const data = await response.json();
+                return data;
+            } catch (error) {
+                console.error('Error fetching orders:', error);
+                throw error;
+            }
+        }
+
+        async function fetchSymbols(query = '') {
+            try {
+                const response = await fetch(`/api/orders/symbols?q=${encodeURIComponent(query)}`);
+                if (!response.ok) throw new Error('Failed to fetch symbols');
+                
+                const data = await response.json();
+                return data.symbols;
+            } catch (error) {
+                console.error('Error fetching symbols:', error);
+                return [];
+            }
+        }
+
+        async function fetchStatuses() {
+            try {
+                const response = await fetch('/api/orders/statuses');
+                if (!response.ok) throw new Error('Failed to fetch statuses');
+                
+                const data = await response.json();
+                return data.statuses;
+            } catch (error) {
+                console.error('Error fetching statuses:', error);
+                return [];
+            }
+        }
+
+        // Data processing
+        function processOrdersData(orders) {
+            const buy = orders.filter(o => o.type === 'BUY');
+            const sell = orders.filter(o => o.type === 'SELL');
+            
+            return { buy, sell };
+        }
+
+        function applyFilters() {
+            filteredData.buy = ordersData.buy.filter(order => {
+                if (currentFilters.symbol && !order.symbol.toLowerCase().includes(currentFilters.symbol.toLowerCase())) {
+                    return false;
+                }
+                if (currentFilters.status && !order.status.toLowerCase().includes(currentFilters.status.toLowerCase())) {
+                    return false;
+                }
+                if (currentFilters.startDate && order.date < currentFilters.startDate) {
+                    return false;
+                }
+                if (currentFilters.endDate && order.date > currentFilters.endDate) {
+                    return false;
+                }
+                return true;
+            });
+
+            filteredData.sell = ordersData.sell.filter(order => {
+                if (currentFilters.symbol && !order.symbol.toLowerCase().includes(currentFilters.symbol.toLowerCase())) {
+                    return false;
+                }
+                if (currentFilters.status && !order.status.toLowerCase().includes(currentFilters.status.toLowerCase())) {
+                    return false;
+                }
+                if (currentFilters.startDate && order.date < currentFilters.startDate) {
+                    return false;
+                }
+                if (currentFilters.endDate && order.date > currentFilters.endDate) {
+                    return false;
+                }
+                return true;
+            });
+
+            currentPage.buy = 1;
+            currentPage.sell = 1;
+        }
+
+        function sortData(type, column) {
+            const data = filteredData[type];
+            
+            if (sortColumn[type] === column) {
+                sortDirection[type] = sortDirection[type] === 'asc' ? 'desc' : 'asc';
+            } else {
+                sortColumn[type] = column;
+                sortDirection[type] = 'asc';
+            }
+
+            data.sort((a, b) => {
+                let aVal = a[column];
+                let bVal = b[column];
+
+                if (column === 'date') {
+                    aVal = new Date(aVal);
+                    bVal = new Date(bVal);
+                } else if (column === 'quantity' || column === 'price' || column === 'total') {
+                    aVal = parseFloat(aVal) || 0;
+                    bVal = parseFloat(bVal) || 0;
+                } else {
+                    aVal = String(aVal).toLowerCase();
+                    bVal = String(bVal).toLowerCase();
+                }
+
+                if (aVal < bVal) return sortDirection[type] === 'asc' ? -1 : 1;
+                if (aVal > bVal) return sortDirection[type] === 'asc' ? 1 : -1;
+                return 0;
+            });
+
+            renderTable(type);
+        }
+
+        // Rendering functions
+        function renderKPIs(metrics) {
+            document.getElementById('buy-total').textContent = formatCurrency(metrics.buy_total);
+            document.getElementById('sell-total').textContent = formatCurrency(metrics.sell_total);
+            document.getElementById('profit-total').textContent = formatCurrency(metrics.profit);
+            
+            // Update sub-metrics
+            document.getElementById('sell-subtotal').textContent = formatCurrency(metrics.sell_total);
+            document.getElementById('positions-value').textContent = formatCurrency(0); // Will be updated when positions API is ready
+            
+            // Update trend indicators
+            const profitElement = document.getElementById('profit-total');
+            profitElement.className = 'kpi-value ' + (metrics.profit >= 0 ? 'positive' : 'negative');
+            
+            // Update counts
+            document.getElementById('buy-count').textContent = filteredData.buy.length;
+            document.getElementById('sell-count').textContent = filteredData.sell.length;
+        }
+
+        function renderTable(type) {
+            const data = filteredData[type];
+            const start = (currentPage[type] - 1) * perPage;
+            const end = start + perPage;
+            const pageData = data.slice(start, end);
+            
+            const tbody = document.getElementById(`${type}-orders-body`);
+            
+            if (pageData.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="empty-state">
+                            <div class="empty-state-icon">${type === 'buy' ? '📊' : '📈'}</div>
+                            <div class="empty-state-title">No ${type === 'buy' ? 'Buy' : 'Sell'} Orders</div>
+                            <div class="empty-state-text">No ${type} orders match your current filters</div>
+                        </td>
+                    </tr>
+                `;
+            } else {
+                tbody.innerHTML = pageData.map(order => `
+                    <tr>
+                        <td class="tooltip" data-tooltip="${order.customer}">${order.symbol}</td>
+                        <td>${order.customer}</td>
+                        <td>${formatNumber(order.quantity || 0)}</td>
+                        <td>${formatCurrency(order.price || 0)}</td>
+                        <td>${formatDate(order.date)}</td>
+                        <td><span class="status-badge ${getStatusClass(order.status)}">${order.status}</span></td>
+                        <td>
+                            <button class="action-btn" onclick="viewOrder('${order.id}')">View</button>
+                            <button class="action-btn secondary" onclick="cancelOrder('${order.id}')">Cancel</button>
+                        </td>
+                    </tr>
+                `).join('');
+            }
+
+            renderPagination(type);
+            updateSortIndicators(type);
+        }
+
+        function renderPagination(type) {
+            const data = filteredData[type];
+            const totalPages = Math.ceil(data.length / perPage);
+            const pagination = document.getElementById(`${type}-pagination`);
+            
+            if (totalPages <= 1) {
+                pagination.innerHTML = '';
+                return;
+            }
+
+            let html = '';
+            
+            // Previous button
+            html += `<button class="page-btn" ${currentPage[type] === 1 ? 'disabled' : ''} onclick="changePage('${type}', ${currentPage[type] - 1})">Previous</button>`;
+            
+            // Page numbers
+            const maxPages = 5;
+            let startPage = Math.max(1, currentPage[type] - Math.floor(maxPages / 2));
+            let endPage = Math.min(totalPages, startPage + maxPages - 1);
+            
+            if (endPage - startPage < maxPages - 1) {
+                startPage = Math.max(1, endPage - maxPages + 1);
+            }
+            
+            for (let i = startPage; i <= endPage; i++) {
+                html += `<button class="page-btn ${i === currentPage[type] ? 'active' : ''}" onclick="changePage('${type}', ${i})">${i}</button>`;
+            }
+            
+            // Next button
+            html += `<button class="page-btn" ${currentPage[type] === totalPages ? 'disabled' : ''} onclick="changePage('${type}', ${currentPage[type] + 1})">Next</button>`;
+            
+            // Page info
+            html += `<span class="page-info">Page ${currentPage[type]} of ${totalPages}</span>`;
+            
+            pagination.innerHTML = html;
+        }
+
+        function updateSortIndicators(type) {
+            const headers = document.querySelectorAll(`#${type}-orders-table th.sortable`);
+            headers.forEach(header => {
+                header.classList.remove('sort-asc', 'sort-desc');
+                if (header.dataset.sort === sortColumn[type]) {
+                    header.classList.add(sortDirection[type] === 'asc' ? 'sort-asc' : 'sort-desc');
+                }
+            });
+        }
+
+        function changePage(type, page) {
+            currentPage[type] = page;
+            renderTable(type);
+        }
+
+        // Event handlers
+        function viewOrder(orderId) {
+            alert(`Viewing order: ${orderId}`);
+        }
+
+        function cancelOrder(orderId) {
+            if (confirm(`Are you sure you want to cancel order: ${orderId}?`)) {
+                alert(`Order ${orderId} cancelled`);
+            }
+        }
+
+        function setupEventListeners() {
+            // Symbol autocomplete
+            const symbolInput = document.getElementById('symbol-filter');
+            const autocompleteList = document.getElementById('symbol-autocomplete');
+            let autocompleteTimeout;
+
+            symbolInput.addEventListener('input', async (e) => {
+                clearTimeout(autocompleteTimeout);
+                const query = e.target.value.trim();
+                
+                if (query.length < 1) {
+                    autocompleteList.style.display = 'none';
+                    return;
+                }
+
+                autocompleteTimeout = setTimeout(async () => {
+                    const symbols = await fetchSymbols(query);
+                    if (symbols.length > 0) {
+                        autocompleteList.innerHTML = symbols.map(symbol => 
+                            `<div class="autocomplete-item" data-symbol="${symbol}">${symbol}</div>`
+                        ).join('');
+                        autocompleteList.style.display = 'block';
+                    } else {
+                        autocompleteList.style.display = 'none';
+                    }
+                }, 300);
+            });
+
+
+            // Autocomplete item selection
+            autocompleteList.addEventListener('click', (e) => {
+                if (e.target.classList.contains('autocomplete-item')) {
+                    symbolInput.value = e.target.dataset.symbol;
+                    autocompleteList.style.display = 'none';
+                    applyFilters();
+                }
+            });
+
+            // Hide autocomplete when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!symbolInput.contains(e.target) && !autocompleteList.contains(e.target)) {
+                    autocompleteList.style.display = 'none';
+                }
+            });
+
+            // Date presets
+            const presetButtons = document.querySelectorAll('.preset-btn');
+            presetButtons.forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    presetButtons.forEach(b => b.classList.remove('active'));
+                    e.target.classList.add('active');
+                    
+                    const preset = e.target.dataset.preset;
+                    const today = new Date();
+                    let startDate, endDate;
+                    
+                    switch (preset) {
+                        case 'today':
+                            startDate = endDate = today;
+                            break;
+                        case 'week':
+                            startDate = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+                            endDate = today;
+                            break;
+                        case 'month':
+                            startDate = new Date(today.getFullYear(), today.getMonth(), 1);
+                            endDate = today;
+                            break;
+                        case 'quarter':
+                            startDate = new Date(today.getFullYear(), today.getMonth() - 3, 1);
+                            endDate = today;
+                            break;
+                    }
+                    
+                    document.getElementById('date-start').value = startDate.toISOString().split('T')[0];
+                    document.getElementById('date-end').value = endDate.toISOString().split('T')[0];
+                    
+                    currentFilters.startDate = document.getElementById('date-start').value;
+                    currentFilters.endDate = document.getElementById('date-end').value;
+                    applyFilters();
+                });
+            });
+
+            // Filter inputs
+            document.getElementById('symbol-filter').addEventListener('change', applyFilters);
+            document.getElementById('status-filter').addEventListener('change', applyFilters);
+            document.getElementById('date-start').addEventListener('change', (e) => {
+                currentFilters.startDate = e.target.value;
+                applyFilters();
+            });
+            document.getElementById('date-end').addEventListener('change', (e) => {
+                currentFilters.endDate = e.target.value;
+                applyFilters();
+            });
+
+            // Filter buttons
+            document.getElementById('apply-filters').addEventListener('click', applyFilters);
+            document.getElementById('clear-filters').addEventListener('click', clearFilters);
+
+            // Sortable headers
+            document.querySelectorAll('th.sortable').forEach(header => {
+                header.addEventListener('click', (e) => {
+                    const table = e.target.closest('table');
+                    const type = table.id.includes('buy') ? 'buy' : 'sell';
+                    const column = e.target.dataset.sort;
+                    sortData(type, column);
+                });
+            });
+        }
+
+        function applyFilters() {
+            // Update current filters
+            currentFilters.symbol = document.getElementById('symbol-filter').value.trim();
+            currentFilters.status = document.getElementById('status-filter').value.trim();
+            currentFilters.startDate = document.getElementById('date-start').value;
+            currentFilters.endDate = document.getElementById('date-end').value;
+            if (!validateDateRange()) return;
+            
+            // Apply filters to data
+            filterData();
+            
+            // Re-render everything
+            renderKPIs(aggregateOrdersMetrics(filteredData.buy.concat(filteredData.sell)));
+            renderTable('buy');
+            renderTable('sell');
+        }
+
+        function clearFilters() {
+            document.getElementById('symbol-filter').value = '';
+            document.getElementById('status-filter').value = '';
+            document.getElementById('date-start').value = '';
+            document.getElementById('date-end').value = '';
+            document.querySelectorAll('.preset-btn').forEach(btn => btn.classList.remove('active'));
+            
+            currentFilters = {
+                symbol: '',
+                status: '',
+                startDate: '',
+                endDate: ''
+            };
+            
+            applyFilters();
+        }
+
+        function applyFiltersToData() {
+            applyFilters();
+        }
+
+        function aggregateOrdersMetrics(orders) {
+            const buyOrders = orders.filter(o => o.type === 'BUY');
+            const sellOrders = orders.filter(o => o.type === 'SELL');
+            
+            const buyTotal = buyOrders.reduce((sum, order) => sum + (order.total || 0), 0);
+            const sellTotal = sellOrders.reduce((sum, order) => sum + (order.total || 0), 0);
+            const profit = sellTotal - buyTotal;
+            
+            return {
+                buy_total: buyTotal,
+                sell_total: sellTotal,
+                profit: profit,
+                orders_count: orders.length
+            };
+        }
+
+        // Initialize
+        async function initialize() {
+            try {
+                setupEventListeners();
+                
+                // Initialize date inputs with flatpickr
+                flatpickr('#date-start, #date-end', {
+                    dateFormat: 'Y-m-d',
+                    allowInput: true
+                });
+                
+                // Fetch initial data
+                const data = await fetchOrders();
+                ordersData = processOrdersData(data.orders);
+                filteredData = { buy: [...ordersData.buy], sell: [...ordersData.sell] };
+                
+                // Hide loading, show content
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('filters-section').style.display = 'block';
+                document.getElementById('kpi-section').style.display = 'grid';
+                document.getElementById('tables-section').style.display = 'grid';
+                
+                // Render initial data
+                renderKPIs(data.metrics);
+                renderTable('buy');
+                renderTable('sell');
+                
+                // Fetch and populate status dropdown
+                const statuses = await fetchStatuses();
+                const statusSelect = document.getElementById('status-filter');
+                statuses.forEach(status => {
+                    const option = document.createElement('option');
+                    option.value = status.toLowerCase();
+                    option.textContent = status;
+                    statusSelect.appendChild(option);
+                });
+                
+            } catch (error) {
+                showError('Failed to load orders data. Please refresh the page.');
+                console.error('Initialization error:', error);
+            }
+        }
+
+        // Start the application
+        document.addEventListener('DOMContentLoaded', initialize);
+    </script>
+</body>
+</html>
