@@ -1,0 +1,1483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Webull Visualization Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            color: white;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(600px, 1fr));
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .chart-container {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            transition: transform 0.3s ease;
+        }
+
+        .chart-container:hover {
+            transform: translateY(-5px);
+        }
+
+        .chart-title {
+            font-size: 1.5em;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: #333;
+            text-align: center;
+        }
+
+        .chart-wrapper {
+            position: relative;
+            height: 400px;
+        }
+
+        .loading {
+            text-align: center;
+            color: white;
+            font-size: 1.2em;
+            padding: 50px;
+        }
+
+        .error {
+            background: #ff6b6b;
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        .refresh-btn {
+            background: white;
+            color: #667eea;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            font-size: 1em;
+            cursor: pointer;
+            margin: 20px auto;
+            display: block;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+        }
+
+        .refresh-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        }
+
+        .metrics-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+            max-width: 1200px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .metric-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            text-align: center;
+            transition: transform 0.3s ease;
+        }
+
+        .metric-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .metric-label {
+            font-size: 1em;
+            color: #666;
+            margin-bottom: 10px;
+            font-weight: 500;
+        }
+
+        .metric-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .metric-value.positive {
+            color: #10b981;
+        }
+
+        .metric-value.negative {
+            color: #ef4444;
+        }
+
+        .tabs-container {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin: 30px 0;
+            flex-wrap: wrap;
+        }
+
+        .tab-button {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            padding: 12px 30px;
+            border-radius: 25px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .tab-button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .tab-button.active {
+            background: white;
+            color: #667eea;
+            border-color: white;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
+        .filters-wrapper {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 25px 30px;
+            margin: 30px auto;
+            max-width: 900px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .filters-title {
+            text-align: center;
+            color: #333;
+            font-size: 1.3em;
+            font-weight: 600;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .filters-title::before,
+        .filters-title::after {
+            content: '';
+            flex: 1;
+            height: 2px;
+            background: linear-gradient(to right, transparent, #667eea, transparent);
+        }
+
+        .filters-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            align-items: end;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .filter-label {
+            color: #555;
+            font-size: 0.9em;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .filter-label::before {
+            content: '🔍';
+            font-size: 1.1em;
+        }
+
+        .filter-select {
+            padding: 12px 15px;
+            border-radius: 12px;
+            border: 2px solid #e0e0e0;
+            font-size: 1em;
+            background: white;
+            color: #333;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .filter-select:hover {
+            border-color: #667eea;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+            transform: translateY(-2px);
+        }
+
+        .filter-select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .filter-select option {
+            padding: 10px;
+            background: white;
+        }
+
+        .clear-filters-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 12px;
+            font-size: 0.95em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            align-self: end;
+        }
+
+        .clear-filters-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .clear-filters-btn:active {
+            transform: translateY(0);
+        }
+
+        .view-container {
+            display: none;
+        }
+
+        .view-container.active {
+            display: block;
+        }
+
+        @media (max-width: 768px) {
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .chart-wrapper {
+                height: 300px;
+            }
+
+            .metrics-container {
+                grid-template-columns: 1fr;
+            }
+
+            .filters-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .clear-filters-btn {
+                align-self: stretch;
+            }
+
+            .filters-wrapper {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Webull Financial Dashboard</h1>
+        <button class="refresh-btn" onclick="loadData()">Refresh Data</button>
+        <div id="loading" class="loading">Loading data from Google Sheets...</div>
+        <div id="error" class="error" style="display: none;"></div>
+
+        <!-- Tabs -->
+        <div id="tabs" class="tabs-container" style="display: none;">
+            <button class="tab-button active" onclick="switchView('trends')">View 1: Financial Flow Analysis</button>
+            <button class="tab-button" onclick="switchView('orders')">View 2: Order Analysis</button>
+        </div>
+
+        <!-- View 1: Overall Trends -->
+        <div id="view-trends" class="view-container active">
+            <!-- Summary Metrics -->
+            <div id="metrics" class="metrics-container" style="display: none;">
+                <div class="metric-card">
+                    <div class="metric-label">Total Incoming (Completed)</div>
+                    <div class="metric-value positive" id="total-incoming">$0.00</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Total Outgoing (Completed)</div>
+                    <div class="metric-value negative" id="total-outgoing">$0.00</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Net Account Value</div>
+                    <div class="metric-value" id="net-value">$0.00</div>
+                </div>
+            </div>
+            <div id="charts" class="charts-grid" style="display: none;">
+                <div class="chart-container">
+                    <div class="chart-title">Monthly Cash Flow Analysis</div>
+                    <div class="chart-wrapper">
+                        <canvas id="monthlyCashFlowChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="chart-container">
+                    <div class="chart-title">Yearly Transfer Volume Comparison</div>
+                    <div class="chart-wrapper">
+                        <canvas id="yearlyTransferChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="chart-container">
+                    <div class="chart-title">Transaction Status Distribution</div>
+                    <div class="chart-wrapper">
+                        <canvas id="statusChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="chart-container">
+                    <div class="chart-title">Transfer Volume by Type</div>
+                    <div class="chart-wrapper">
+                        <canvas id="transferTypeChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- View 2: Order Analysis -->
+        <div id="view-orders" class="view-container">
+            <div class="chart-container" id="orders-list-container" style="display:none;">
+                <div class="chart-title">Orders</div>
+                <div id="orders-loading" class="loading" style="display:none;">Loading orders...</div>
+                <div id="orders-empty" class="error" style="display:none;">No orders found</div>
+                <div style="overflow-x:auto;">
+                    <table id="orders-list-table" style="width:100%;border-collapse:collapse;display:none;">
+                        <thead>
+                            <tr style="background:#f5f5f5;">
+                                <th style="padding:12px;text-align:left;border-bottom:2px solid #ddd;">Order ID</th>
+                                <th style="padding:12px;text-align:left;border-bottom:2px solid #ddd;">Customer</th>
+                                <th style="padding:12px;text-align:left;border-bottom:2px solid #ddd;">Order Date</th>
+                                <th style="padding:12px;text-align:left;border-bottom:2px solid #ddd;">Status</th>
+                                <th style="padding:12px;text-align:right;border-bottom:2px solid #ddd;">Total Amount</th>
+                                <th style="padding:12px;text-align:center;border-bottom:2px solid #ddd;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="orders-list-body"></tbody>
+                    </table>
+                </div>
+            </div>
+            <div id="order-kpi" class="metrics-container" style="display: none;">
+                <div class="metric-card">
+                    <div class="metric-label">Total Profits</div>
+                    <div class="metric-value" id="total-profit">$0.00</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Bought Total Value</div>
+                    <div class="metric-value" id="bought-total-value">$0.00</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Sell Total Value</div>
+                    <div class="metric-value" id="sell-total-value">$0.00</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Total Positions Value</div>
+                    <div class="metric-value" id="total-positions-value">$0.00</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Orders Count</div>
+                    <div class="metric-value" id="orders-count">0</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Win Rate</div>
+                    <div class="metric-value" id="win-rate">0%</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Avg P&L / Trade</div>
+                    <div class="metric-value" id="avg-pnl">$0.00</div>
+                </div>
+            </div>
+
+            <div id="filters-container" class="filters-wrapper" style="display: none;">
+                <div class="filters-title">Filter Options</div>
+                <div class="filters-grid">
+                    <div class="filter-group">
+                        <label for="stock-search" class="filter-label">Stock Symbol</label>
+                        <input type="text" id="stock-search" class="filter-select" placeholder="Search or select symbol..." list="stock-list">
+                        <datalist id="stock-list"></datalist>
+                    </div>
+                    <div class="filter-group">
+                        <label for="status-filter" class="filter-label">Status</label>
+                        <select id="status-filter" class="filter-select">
+                            <option value="">All Statuses</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label for="date-range" class="filter-label">Date Range</label>
+                        <input type="text" id="date-range" class="filter-select" placeholder="Select date range">
+                    </div>
+                    <div class="filter-group">
+                        <label for="quick-range" class="filter-label">Quick Select</label>
+                        <select id="quick-range" class="filter-select">
+                            <option value="">Select</option>
+                            <option value="today">Today</option>
+                            <option value="week">This Week</option>
+                            <option value="month">This Month</option>
+                            <option value="mtd">MTD</option>
+                            <option value="qtd">QTD</option>
+                            <option value="ytd">YTD</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label for="refresh-interval" class="filter-label">Auto Refresh (min)</label>
+                        <input type="number" id="refresh-interval" class="filter-select" min="0" step="1" placeholder="5">
+                    </div>
+                    <div class="filter-group">
+                        <button class="clear-filters-btn" onclick="clearFilters()">Reset All</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="order-tables" style="display: none; max-width: 1400px; margin: 0 auto;">
+                <div style="display:flex;gap:10px;justify-content:flex-end;margin-bottom:10px;">
+                    <button class="clear-filters-btn" id="export-csv">Export CSV</button>
+                    <button class="clear-filters-btn" id="export-xlsx">Export Excel</button>
+                    <button class="clear-filters-btn" id="export-pdf">Export PDF</button>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 30px;">
+                    <div class="chart-container">
+                        <div class="chart-title">Buy Orders</div>
+                        <div style="overflow-x: auto;">
+                            <table id="buy-orders-table" style="width: 100%; border-collapse: collapse;">
+                                <thead>
+                                    <tr style="background: #f5f5f5;">
+                                        <th style="padding: 12px; text-align: left; border-bottom: 2px solid #ddd;">Symbol</th>
+                                        <th style="padding: 12px; text-align: right; border-bottom: 2px solid #ddd;">Price</th>
+                                        <th style="padding: 12px; text-align: right; border-bottom: 2px solid #ddd;">Quantity</th>
+                                        <th style="padding: 12px; text-align: right; border-bottom: 2px solid #ddd;">Total Value</th>
+                                        <th style="padding: 12px; text-align: center; border-bottom: 2px solid #ddd;">Date of Buy</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="buy-orders-body">
+                                    <tr><td colspan="5" style="padding: 20px; text-align: center; color: #999;">No buy orders found</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:8px;">
+                            <button class="clear-filters-btn" id="prev-buy">Prev</button>
+                            <span id="buy-page-info" style="align-self:center;color:#555;">Page 1</span>
+                            <button class="clear-filters-btn" id="next-buy">Next</button>
+                        </div>
+                    </div>
+
+                    <div class="chart-container">
+                        <div class="chart-title">Sell Orders</div>
+                        <div style="overflow-x: auto;">
+                            <table id="sell-orders-table" style="width: 100%; border-collapse: collapse;">
+                                <thead>
+                                    <tr style="background: #f5f5f5;">
+                                        <th style="padding: 12px; text-align: left; border-bottom: 2px solid #ddd;">Symbol</th>
+                                        <th style="padding: 12px; text-align: right; border-bottom: 2px solid #ddd;">Price</th>
+                                        <th style="padding: 12px; text-align: right; border-bottom: 2px solid #ddd;">Quantity</th>
+                                        <th style="padding: 12px; text-align: right; border-bottom: 2px solid #ddd;">Total Value</th>
+                                        <th style="padding: 12px; text-align: right; border-bottom: 2px solid #ddd;">Profit</th>
+                                        <th style="padding: 12px; text-align: center; border-bottom: 2px solid #ddd;">Date of Sell</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="sell-orders-body">
+                                    <tr><td colspan="6" style="padding: 20px; text-align: center; color: #999;">No sell orders found</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:8px;">
+                            <button class="clear-filters-btn" id="prev-sell">Prev</button>
+                            <span id="sell-page-info" style="align-self:center;color:#555;">Page 1</span>
+                            <button class="clear-filters-btn" id="next-sell">Next</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <div class="chart-title">Top 5 Traded Securities by Volume</div>
+                    <div class="chart-wrapper" style="height: 300px;">
+                        <canvas id="topSymbolsChart"></canvas>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <div class="chart-title" style="display:flex;justify-content:space-between;align-items:center;">
+                        <span>Open Positions</span>
+                        <button class="clear-filters-btn" id="refresh-prices">Refresh Prices</button>
+                    </div>
+                    <div style="overflow-x:auto;">
+                        <table style="width:100%;border-collapse:collapse;">
+                            <thead>
+                                <tr style="background:#f5f5f5;">
+                                    <th style="padding:12px;text-align:left;border-bottom:2px solid #ddd;">Symbol</th>
+                                    <th style="padding:12px;text-align:right;border-bottom:2px solid #ddd;">Quantity</th>
+                                    <th style="padding:12px;text-align:right;border-bottom:2px solid #ddd;">Cost Basis</th>
+                                    <th style="padding:12px;text-align:right;border-bottom:2px solid #ddd;">Market Price</th>
+                                    <th style="padding:12px;text-align:right;border-bottom:2px solid #ddd;">Market Value</th>
+                                    <th style="padding:12px;text-align:right;border-bottom:2px solid #ddd;">Gain/Loss %</th>
+                                    <th style="padding:12px;text-align:center;border-bottom:2px solid #ddd;">Duration</th>
+                                </tr>
+                            </thead>
+                            <tbody id="positions-body">
+                                <tr><td colspan="7" style="padding:20px;text-align:center;color:#999;">No open positions</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+            
+        </div>
+    </div>
+
+    <script>
+        let charts = {};
+        let filterWorker = null;
+        let lastFilter = { search: '', status: '', start: null, end: null };
+        let lastFilteredBuy = [];
+        let lastFilteredSell = [];
+        let pageSize = 50;
+        let buyPage = 1;
+        let sellPage = 1;
+
+        async function loadData() {
+            const loading = document.getElementById('loading');
+            const error = document.getElementById('error');
+            const chartsDiv = document.getElementById('charts');
+            
+            loading.style.display = 'block';
+            error.style.display = 'none';
+            chartsDiv.style.display = 'none';
+
+            try {
+                const response = await fetch('/api/data');
+                const data = await response.json();
+
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+
+                loading.style.display = 'none';
+                document.getElementById('tabs').style.display = 'flex';
+                
+                // Display summary metrics
+                displayMetrics(data.summary_metrics);
+                
+                // Display order analysis
+                displayOrderAnalysis(data.order_analysis);
+                if (!filterWorker) {
+                    filterWorker = new Worker('/static/js/processing.worker.js');
+                    filterWorker.onmessage = (evt) => {
+                        if (evt.data && evt.data.type === 'FILTER_RESULT') {
+                            const r = evt.data.data;
+                            lastFilteredBuy = r.filteredBuyOrders || [];
+                            lastFilteredSell = r.filteredSellOrders || [];
+                            renderFilteredTables(r.filteredBuyOrders, r.filteredSellOrders, r.totals);
+                            renderOrderMetrics(r.metrics, r.topSymbols);
+                        }
+                    };
+                    filterWorker.postMessage({ type: 'INIT', payload: { buy_orders: data.order_analysis.buy_orders, sell_orders: data.order_analysis.sell_orders } });
+                }
+
+                // Show charts for active view
+                createCharts(data);
+            } catch (err) {
+                loading.style.display = 'none';
+                error.style.display = 'block';
+                error.textContent = `Error: ${err.message}`;
+                console.error('Error loading data:', err);
+            }
+        }
+
+        function formatCurrency(value) {
+            const sign = value >= 0 ? '+' : '';
+            return `${sign}$${Math.abs(value).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+        }
+
+        function displayMetrics(metrics) {
+            const metricsDiv = document.getElementById('metrics');
+            if (!metrics) {
+                metricsDiv.style.display = 'none';
+                return;
+            }
+
+            metricsDiv.style.display = 'grid';
+            
+            const totalIncoming = document.getElementById('total-incoming');
+            const totalOutgoing = document.getElementById('total-outgoing');
+            const netValue = document.getElementById('net-value');
+
+            totalIncoming.textContent = formatCurrency(metrics.total_incoming_completed);
+            totalOutgoing.textContent = formatCurrency(-metrics.total_outgoing_completed);
+            
+            netValue.textContent = formatCurrency(metrics.net_account_value);
+            netValue.className = 'metric-value ' + (metrics.net_account_value >= 0 ? 'positive' : 'negative');
+        }
+
+        function switchView(viewName) {
+            const buttons = document.querySelectorAll('.tabs-container .tab-button');
+            buttons.forEach(btn => btn.classList.remove('active'));
+            if (viewName === 'trends' && buttons[0]) buttons[0].classList.add('active');
+            if (viewName === 'orders' && buttons[1]) buttons[1].classList.add('active');
+            document.querySelectorAll('.view-container').forEach(view => { view.classList.remove('active'); });
+            const selectedView = document.getElementById(`view-${viewName}`);
+            if (selectedView) { selectedView.classList.add('active'); }
+            if (window.currentData) { createCharts(window.currentData); }
+        }
+
+        // Make switchView accessible globally
+        window.switchView = switchView;
+
+        function clearFilters() {
+            const stockSearch = document.getElementById('stock-search');
+            const statusFilter = document.getElementById('status-filter');
+            const dateRange = document.getElementById('date-range');
+            const quickRange = document.getElementById('quick-range');
+            stockSearch.value = '';
+            statusFilter.value = '';
+            if (dateRange) dateRange.value = '';
+            if (quickRange) quickRange.value = '';
+            buyPage = 1;
+            sellPage = 1;
+            lastFilter = { search: '', status: '', start: null, end: null };
+            localStorage.setItem('wb:filters', JSON.stringify(lastFilter));
+            applyFiltersWithWorker();
+        }
+
+        function createCharts(data) {
+            // Store data globally
+            window.currentData = data;
+            
+            // Destroy existing charts
+            Object.values(charts).forEach(chart => {
+                if (chart) chart.destroy();
+            });
+            charts = {};
+            
+            // Get active view
+            const activeView = document.querySelector('.view-container.active');
+            if (!activeView) return;
+            
+            const viewId = activeView.id;
+            
+            if (viewId === 'view-trends') {
+                createTrendsCharts(data);
+            } else if (viewId === 'view-orders') {
+                createOrderAnalysisCharts(data);
+            }
+        }
+
+        function createTrendsCharts(data) {
+            const chartsDiv = document.getElementById('charts');
+            chartsDiv.style.display = 'grid';
+
+            // Monthly Cash Flow Chart
+            const monthlyCtx = document.getElementById('monthlyCashFlowChart').getContext('2d');
+            charts.monthly = new Chart(monthlyCtx, {
+                type: 'bar',
+                data: {
+                    labels: data.monthly_cash_flow.months,
+                    datasets: [
+                        {
+                            label: 'Incoming',
+                            data: data.monthly_cash_flow.incoming,
+                            backgroundColor: 'rgba(75, 192, 192, 0.6)',
+                            borderColor: 'rgba(75, 192, 192, 1)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Outgoing',
+                            data: data.monthly_cash_flow.outgoing,
+                            backgroundColor: 'rgba(255, 99, 132, 0.6)',
+                            borderColor: 'rgba(255, 99, 132, 1)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Net Flow',
+                            data: data.monthly_cash_flow.net_flow,
+                            type: 'line',
+                            borderColor: 'rgba(54, 162, 235, 1)',
+                            backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                            borderWidth: 2,
+                            fill: false,
+                            tension: 0.4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            title: {
+                                display: true,
+                                text: 'Amount ($)'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Year-Month'
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Yearly Transfer Volume Chart
+            const yearlyCtx = document.getElementById('yearlyTransferChart').getContext('2d');
+            charts.yearly = new Chart(yearlyCtx, {
+                type: 'bar',
+                data: {
+                    labels: data.yearly_transfer_volume.years,
+                    datasets: [
+                        {
+                            label: 'Incoming',
+                            data: data.yearly_transfer_volume.incoming,
+                            backgroundColor: 'rgba(75, 192, 192, 0.8)',
+                            borderColor: 'rgba(75, 192, 192, 1)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Outgoing',
+                            data: data.yearly_transfer_volume.outgoing,
+                            backgroundColor: 'rgba(255, 99, 132, 0.8)',
+                            borderColor: 'rgba(255, 99, 132, 1)',
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false
+                        }
+                    },
+                    scales: {
+                        x: {
+                            stacked: true,
+                            title: {
+                                display: true,
+                                text: 'Year'
+                            }
+                        },
+                        y: {
+                            stacked: true,
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Amount'
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Transaction Status Distribution (Donut Chart)
+            const statusCtx = document.getElementById('statusChart').getContext('2d');
+            charts.status = new Chart(statusCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: data.transaction_status.labels,
+                    datasets: [{
+                        data: data.transaction_status.values,
+                        backgroundColor: [
+                            'rgba(75, 192, 192, 0.8)',
+                            'rgba(255, 99, 132, 0.8)',
+                            'rgba(75, 192, 192, 0.5)'
+                        ],
+                        borderColor: [
+                            'rgba(75, 192, 192, 1)',
+                            'rgba(255, 99, 132, 1)',
+                            'rgba(75, 192, 192, 1)'
+                        ],
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'right'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.label || '';
+                                    const value = context.parsed || 0;
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = ((value / total) * 100).toFixed(1);
+                                    return `${label}: ${value} (${percentage}%)`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Transfer Volume by Type (Horizontal Bar Chart)
+            const transferTypeCtx = document.getElementById('transferTypeChart').getContext('2d');
+            charts.transferType = new Chart(transferTypeCtx, {
+                type: 'bar',
+                data: {
+                    labels: data.transfer_by_type.types,
+                    datasets: [{
+                        label: 'Amount ($)',
+                        data: data.transfer_by_type.amounts,
+                        backgroundColor: 'rgba(75, 192, 192, 0.8)',
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `Amount: $${context.parsed.x.toLocaleString()}`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Amount ($)'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Type'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function createOrderAnalysisCharts(data) {
+            const orderAnalysis = data.order_analysis || {};
+            const ordersList = data.orders_list || [];
+            
+            // Display KPIs
+            const kpiDiv = document.getElementById('order-kpi');
+            
+            // Total Profits KPI
+            const profitValue = document.getElementById('total-profit');
+            const totalProfit = orderAnalysis.total_profit || 0;
+            profitValue.textContent = formatCurrency(totalProfit);
+            profitValue.className = 'metric-value ' + (totalProfit >= 0 ? 'positive' : 'negative');
+            
+            // Bought Total Value KPI
+            const boughtValue = document.getElementById('bought-total-value');
+            const totalBought = orderAnalysis.total_value_bought || 0;
+            boughtValue.textContent = formatCurrency(totalBought);
+            boughtValue.className = 'metric-value';
+            
+            // Sell Total Value KPI
+            const sellValue = document.getElementById('sell-total-value');
+            const totalSold = orderAnalysis.total_value_sold || 0;
+            sellValue.textContent = formatCurrency(totalSold);
+            sellValue.className = 'metric-value';
+            
+            // Total Positions Value KPI (currently held positions)
+            const positionsValue = document.getElementById('total-positions-value');
+            const totalPositions = orderAnalysis.total_positions_value || 0;
+            positionsValue.textContent = formatCurrency(totalPositions);
+            positionsValue.className = 'metric-value ' + (totalPositions >= 0 ? 'positive' : 'negative');
+            
+            kpiDiv.style.display = 'grid';
+
+            const listContainer = document.getElementById('orders-list-container');
+            const listLoading = document.getElementById('orders-loading');
+            const listEmpty = document.getElementById('orders-empty');
+            const listTable = document.getElementById('orders-list-table');
+            listContainer.style.display = 'block';
+            listLoading.style.display = 'block';
+            renderOrdersList(ordersList);
+            
+            // Setup filters
+            const filtersContainer = document.getElementById('filters-container');
+            const statusFilter = document.getElementById('status-filter');
+            const stockSymbols = orderAnalysis.stock_symbols || [];
+            const statuses = orderAnalysis.statuses || [];
+            
+            // Populate status filter dropdown
+            statusFilter.innerHTML = '<option value="">All Statuses</option>';
+            statuses.forEach(status => {
+                const option = document.createElement('option');
+                option.value = status;
+                option.textContent = status;
+                statusFilter.appendChild(option);
+            });
+            
+            filtersContainer.style.display = 'block';
+            
+            const stockList = document.getElementById('stock-list');
+            const uniqueSymbols = [...new Set(orderAnalysis.buy_orders.map(o => o.symbol).concat(orderAnalysis.sell_orders.map(o => o.symbol)))];
+            uniqueSymbols.forEach(symbol => {
+                const option = document.createElement('option');
+                option.value = symbol;
+                stockList.appendChild(option);
+            });
+
+            displayOrderTables(orderAnalysis, '', '');
+            const stockSearch = document.getElementById('stock-search');
+            const dateRange = document.getElementById('date-range');
+            const quickRange = document.getElementById('quick-range');
+            const refreshIntervalInput = document.getElementById('refresh-interval');
+            flatpickr(dateRange, { mode: 'range' });
+            const persist = () => localStorage.setItem('wb:filters', JSON.stringify(lastFilter));
+            const restore = () => {
+                const v = localStorage.getItem('wb:filters');
+                if (v) {
+                    try {
+                        const obj = JSON.parse(v);
+                        lastFilter = Object.assign(lastFilter, obj);
+                        stockSearch.value = lastFilter.search || '';
+                        statusFilter.value = lastFilter.status || '';
+                    } catch {}
+                }
+            };
+            restore();
+            const refreshPersistKey = 'wb:autoRefreshMin';
+            const savedMin = localStorage.getItem(refreshPersistKey);
+            if (savedMin !== null) refreshIntervalInput.value = savedMin;
+            statusFilter.onchange = function() {
+                lastFilter.status = this.value || '';
+                persist();
+                applyFiltersWithWorker();
+            };
+            stockSearch.onkeyup = function() {
+                lastFilter.search = this.value || '';
+                persist();
+                applyFiltersWithWorker();
+            };
+            dateRange.onchange = function() {
+                const parts = (this.value || '').split(' to ');
+                lastFilter.start = parts[0] || null;
+                lastFilter.end = parts[1] || null;
+                persist();
+                applyFiltersWithWorker();
+            };
+            quickRange.onchange = function() {
+                const now = new Date();
+                const set = (start, end) => { lastFilter.start = start ? start.toISOString().slice(0,10) : null; lastFilter.end = end ? end.toISOString().slice(0,10) : null; };
+                if (this.value === 'today') {
+                    set(now, now);
+                } else if (this.value === 'week') {
+                    const d = new Date(now); const day = d.getDay(); const diff = d.getDate() - day + (day === 0 ? -6 : 1); const start = new Date(d.setDate(diff));
+                    const end = new Date(start); end.setDate(start.getDate() + 6); set(start, end);
+                } else if (this.value === 'month') {
+                    const start = new Date(now.getFullYear(), now.getMonth(), 1); const end = new Date(now.getFullYear(), now.getMonth() + 1, 0); set(start, end);
+                } else if (this.value === 'mtd') {
+                    const start = new Date(now.getFullYear(), now.getMonth(), 1); set(start, now);
+                } else if (this.value === 'qtd') {
+                    const qStartMonth = Math.floor(now.getMonth()/3)*3; const start = new Date(now.getFullYear(), qStartMonth, 1); set(start, now);
+                } else if (this.value === 'ytd') {
+                    const start = new Date(now.getFullYear(), 0, 1); set(start, now);
+                } else { set(null, null); }
+                persist();
+                applyFiltersWithWorker();
+            };
+            applyFiltersWithWorker();
+            document.getElementById('order-tables').style.display = 'block';
+            const refreshBtn = document.getElementById('refresh-prices');
+            refreshBtn.onclick = async function() {
+                let positions = [];
+                try {
+                    const r = await fetch('/api/positions');
+                    const j = await r.json();
+                    positions = (j.positions || []).map(p => ({ symbol: p.symbol, quantity: p.quantity || 0, costBasis: p.cost_basis || p.costBasis || 0 }));
+                } catch {}
+                if (!positions || positions.length === 0) {
+                    positions = calculatePositions(orderAnalysis);
+                }
+                const symbols = positions.map(p => p.symbol).filter(Boolean);
+                if (symbols.length === 0) { renderPositions(positions, {}); return; }
+                try {
+                    const resp = await fetch(`/api/quotes?symbols=${encodeURIComponent(symbols.join(','))}`);
+                    const q = await resp.json();
+                    const quotes = q.quotes || {};
+                    renderPositions(positions, quotes);
+                } catch {
+                    renderPositions(positions, {});
+                }
+            };
+            refreshBtn.click();
+            let autoTimer = null;
+            const setAutoRefresh = () => {
+                if (autoTimer) { clearInterval(autoTimer); autoTimer = null; }
+                const min = parseInt(refreshIntervalInput.value || '0');
+                localStorage.setItem(refreshPersistKey, String(min));
+                if (min > 0) {
+                    autoTimer = setInterval(() => { loadData(); }, min * 60 * 1000);
+                }
+            };
+            refreshIntervalInput.onchange = setAutoRefresh;
+            setAutoRefresh();
+            const prevBuy = document.getElementById('prev-buy');
+            const nextBuy = document.getElementById('next-buy');
+            const prevSell = document.getElementById('prev-sell');
+            const nextSell = document.getElementById('next-sell');
+            prevBuy.onclick = function(){ if (buyPage > 1) { buyPage--; applyFiltersWithWorker(); } };
+            nextBuy.onclick = function(){ buyPage++; applyFiltersWithWorker(); };
+            prevSell.onclick = function(){ if (sellPage > 1) { sellPage--; applyFiltersWithWorker(); } };
+            nextSell.onclick = function(){ sellPage++; applyFiltersWithWorker(); };
+            const exportCsvBtn = document.getElementById('export-csv');
+            const exportXlsxBtn = document.getElementById('export-xlsx');
+            const exportPdfBtn = document.getElementById('export-pdf');
+            exportCsvBtn.onclick = function() {
+                const rows = [...lastFilteredBuy, ...lastFilteredSell];
+                const headers = ['symbol','type','price','quantity','total_value','profit','date','status'];
+                const csv = [headers.join(',')].concat(rows.map(r => headers.map(h => JSON.stringify(r[h] ?? '')).join(','))).join('\n');
+                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url; a.download = 'orders.csv'; a.click(); URL.revokeObjectURL(url);
+            };
+            exportXlsxBtn.onclick = function() {
+                const rows = [...lastFilteredBuy, ...lastFilteredSell];
+                const ws = XLSX.utils.json_to_sheet(rows);
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, 'Orders');
+                XLSX.writeFile(wb, 'orders.xlsx');
+            };
+            exportPdfBtn.onclick = async function() {
+                const el = document.getElementById('order-tables');
+                const canvas = await html2canvas(el);
+                const imgData = canvas.toDataURL('image/png');
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF({ orientation: 'landscape', unit: 'px', format: [canvas.width, canvas.height] });
+                pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
+                pdf.save('orders.pdf');
+            };
+        }
+
+        function renderFilteredTables(filteredBuyOrders, filteredSellOrders, totals) {
+            const filteredTotalBought = totals.totalBought || 0;
+            const filteredTotalSold = totals.totalSold || 0;
+            const filteredTotalProfit = totals.totalProfit || 0;
+            const profitValue = document.getElementById('total-profit');
+            const boughtValue = document.getElementById('bought-total-value');
+            const sellValue = document.getElementById('sell-total-value');
+            profitValue.textContent = formatCurrency(filteredTotalProfit);
+            profitValue.className = 'metric-value ' + (filteredTotalProfit >= 0 ? 'positive' : 'negative');
+            boughtValue.textContent = formatCurrency(filteredTotalBought);
+            sellValue.textContent = formatCurrency(filteredTotalSold);
+            const buyBody = document.getElementById('buy-orders-body');
+            const buyStart = (buyPage - 1) * pageSize;
+            const buySlice = filteredBuyOrders.slice(buyStart, buyStart + pageSize);
+            const buyInfo = document.getElementById('buy-page-info');
+            if (buyInfo) buyInfo.textContent = `Page ${buyPage}`;
+            if (buySlice.length === 0) {
+                buyBody.innerHTML = '<tr><td colspan="5" style="padding: 20px; text-align: center; color: #999;">No buy orders found</td></tr>';
+            } else {
+                buyBody.innerHTML = buySlice.map(order => {
+                    const dateValue = order.date || '';
+                    const dayValue = formatDate(dateValue);
+                    return `
+                    <tr style="border-bottom: 1px solid #eee;">
+                        <td style="padding: 10px; font-weight: 500;">${order.symbol || 'N/A'}</td>
+                        <td style="padding: 10px; text-align: right;">$${(order.price || 0).toFixed(2)}</td>
+                        <td style="padding: 10px; text-align: right;">${(order.quantity || 0).toFixed(2)}</td>
+                        <td style="padding: 10px; text-align: right;">$${(order.total_value || 0).toFixed(2)}</td>
+                        <td style="padding: 10px; text-align: center; color: #666; font-size: 0.9em;">${dayValue}</td>
+                    </tr>
+                `;
+                }).join('');
+            }
+            const sellBody = document.getElementById('sell-orders-body');
+            const sellStart = (sellPage - 1) * pageSize;
+            const sellSlice = filteredSellOrders.slice(sellStart, sellStart + pageSize);
+            const sellInfo = document.getElementById('sell-page-info');
+            if (sellInfo) sellInfo.textContent = `Page ${sellPage}`;
+            if (sellSlice.length === 0) {
+                sellBody.innerHTML = '<tr><td colspan="6" style="padding: 20px; text-align: center; color: #999;">No sell orders found</td></tr>';
+            } else {
+                sellBody.innerHTML = sellSlice.map(order => {
+                    const profit = order.profit || 0;
+                    const dateValue = order.date || '';
+                    const dayValue = formatDate(dateValue);
+                    return `
+                    <tr style="border-bottom: 1px solid #eee;">
+                        <td style="padding: 10px; font-weight: 500;">${order.symbol || 'N/A'}</td>
+                        <td style="padding: 10px; text-align: right;">$${(order.price || 0).toFixed(2)}</td>
+                        <td style="padding: 10px; text-align: right;">${(order.quantity || 0).toFixed(2)}</td>
+                        <td style="padding: 10px; text-align: right;">$${(order.total_value || 0).toFixed(2)}</td>
+                        <td style="padding: 10px; text-align: right; color: ${profit >= 0 ? '#10b981' : '#ef4444'}; font-weight: 500;">${formatCurrency(profit)}</td>
+                        <td style="padding: 10px; text-align: center; color: #666; font-size: 0.9em;">${dayValue}</td>
+                    </tr>
+                `;
+                }).join('');
+            }
+        }
+
+        function renderOrderMetrics(metrics, topSymbols) {
+            const ordersCount = document.getElementById('orders-count');
+            const winRateEl = document.getElementById('win-rate');
+            const avgPnlEl = document.getElementById('avg-pnl');
+            const trades = (metrics && metrics.trades) || 0;
+            const winRate = (metrics && metrics.winRate) ? (metrics.winRate * 100) : 0;
+            const avgPnL = (metrics && metrics.avgPnL) || 0;
+            ordersCount.textContent = String(trades);
+            winRateEl.textContent = `${winRate.toFixed(1)}%`;
+            avgPnlEl.textContent = formatCurrency(avgPnL);
+            const ctx = document.getElementById('topSymbolsChart').getContext('2d');
+            if (charts.topSymbols) charts.topSymbols.destroy();
+            const labels = (topSymbols || []).map(t => t.symbol);
+            const dataVals = (topSymbols || []).map(t => t.volume);
+            charts.topSymbols = new Chart(ctx, {
+                type: 'bar',
+                data: { labels, datasets: [{ label: 'Volume', data: dataVals, backgroundColor: 'rgba(102,126,234,0.6)' }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+            });
+        }
+
+        function renderOrdersList(orders) {
+            const listLoading = document.getElementById('orders-loading');
+            const listEmpty = document.getElementById('orders-empty');
+            const listTable = document.getElementById('orders-list-table');
+            const body = document.getElementById('orders-list-body');
+            listLoading.style.display = 'none';
+            if (!orders || orders.length === 0) {
+                listEmpty.style.display = 'block';
+                listTable.style.display = 'none';
+                body.innerHTML = '';
+                return;
+            }
+            listEmpty.style.display = 'none';
+            listTable.style.display = 'table';
+            body.innerHTML = orders.map(o => {
+                const amt = `$${(o.total || 0).toFixed(2)}`;
+                return `
+                    <tr style="border-bottom:1px solid #eee;">
+                        <td style="padding:10px;font-weight:500;">${o.id || 'N/A'}</td>
+                        <td style="padding:10px;">${o.customer || 'N/A'}</td>
+                        <td style="padding:10px;">${formatDate(o.date || '')}</td>
+                        <td style="padding:10px;">${o.status || 'N/A'}</td>
+                        <td style="padding:10px;text-align:right;">${amt}</td>
+                        <td style="padding:10px;text-align:center;">
+                            <button class="clear-filters-btn" data-action="view" data-id="${o.id}">View</button>
+                            <button class="clear-filters-btn" data-action="cancel" data-id="${o.id}">Cancel</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+            body.querySelectorAll('button').forEach(btn => {
+                btn.onclick = function(){
+                    const action = this.getAttribute('data-action');
+                    const id = this.getAttribute('data-id');
+                    if (action === 'view') {
+                        alert(`Order ${id}`);
+                    } else if (action === 'cancel') {
+                        alert(`Cancel ${id}`);
+                    }
+                };
+            });
+        }
+
+        function applyFiltersWithWorker() {
+            if (!filterWorker) return;
+            filterWorker.postMessage({ type: 'FILTER', payload: lastFilter });
+        }
+
+        function calculatePositions(orderAnalysis) {
+            const bySymbol = {};
+            (orderAnalysis.buy_orders || []).forEach(o => {
+                const s = o.symbol || 'N/A';
+                const qty = o.quantity || 0;
+                const val = (o.price || 0) * qty;
+                if (!bySymbol[s]) bySymbol[s] = { symbol: s, buyQty: 0, buyVal: 0, sellQty: 0, firstBuyDate: null };
+                bySymbol[s].buyQty += qty;
+                bySymbol[s].buyVal += val;
+                const d = formatDate(o.date || '');
+                const parsed = new Date(d);
+                if (!isNaN(parsed.getTime())) {
+                    if (!bySymbol[s].firstBuyDate || parsed < bySymbol[s].firstBuyDate) bySymbol[s].firstBuyDate = parsed;
+                }
+            });
+            (orderAnalysis.sell_orders || []).forEach(o => {
+                const s = o.symbol || 'N/A';
+                const qty = o.quantity || 0;
+                if (!bySymbol[s]) bySymbol[s] = { symbol: s, buyQty: 0, buyVal: 0, sellQty: 0, firstBuyDate: null };
+                bySymbol[s].sellQty += qty;
+            });
+            const positions = Object.values(bySymbol).map(p => {
+                const netQty = (p.buyQty || 0) - (p.sellQty || 0);
+                const costBasis = netQty > 0 ? (p.buyVal || 0) / (p.buyQty || 1) : 0;
+                const durDays = p.firstBuyDate ? Math.floor((new Date().getTime() - p.firstBuyDate.getTime()) / (1000*60*60*24)) : 0;
+                return { symbol: p.symbol, quantity: netQty, costBasis, durationDays: durDays };
+            }).filter(p => p.quantity > 0);
+            return positions;
+        }
+
+        function renderPositions(positions, quotes) {
+            const body = document.getElementById('positions-body');
+            if (!positions || positions.length === 0) {
+                body.innerHTML = '<tr><td colspan="7" style="padding:20px;text-align:center;color:#999;">No open positions</td></tr>';
+                return;
+            }
+            const totalMV = positions.reduce((s, p) => {
+                const price = quotes[p.symbol] || 0;
+                return s + (price * p.quantity);
+            }, 0);
+            body.innerHTML = positions.map(p => {
+                const price = quotes[p.symbol] || 0;
+                const mv = price * p.quantity;
+                const glPct = p.costBasis > 0 && price > 0 ? ((price - p.costBasis) / p.costBasis) * 100 : 0;
+                const color = glPct >= 0 ? '#10b981' : '#ef4444';
+                const relSize = totalMV > 0 ? (mv / totalMV) * 100 : 0;
+                return `
+                    <tr style="border-bottom:1px solid #eee;">
+                        <td style="padding:10px;font-weight:500;">${p.symbol}</td>
+                        <td style="padding:10px;text-align:right;">${p.quantity.toFixed(2)}</td>
+                        <td style="padding:10px;text-align:right;">$${p.costBasis.toFixed(2)}</td>
+                        <td style="padding:10px;text-align:right;">$${price.toFixed(2)}</td>
+                        <td style="padding:10px;text-align:right;">$${mv.toFixed(2)}</td>
+                        <td style="padding:10px;text-align:right;color:${color};font-weight:500;">${glPct.toFixed(2)}%</td>
+                        <td style="padding:10px;text-align:center;">${p.durationDays}d · ${relSize.toFixed(1)}%</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function displayOrderAnalysis(orderAnalysis) {
+            const stockList = document.getElementById('stock-list');
+            stockList.innerHTML = '';
+            const uniqueSymbols = [...new Set(orderAnalysis.buy_orders.map(o => o.symbol).concat(orderAnalysis.sell_orders.map(o => o.symbol)))];
+            uniqueSymbols.forEach(symbol => {
+                const option = document.createElement('option');
+                option.value = symbol;
+                stockList.appendChild(option);
+            });
+            document.getElementById('order-tables').style.display = 'block';
+        }
+
+        function formatDate(dateStr) {
+            if (!dateStr || dateStr === 'N/A' || dateStr === '') return 'N/A';
+            
+            // Convert to string if not already
+            dateStr = String(dateStr).trim();
+            
+            // Try to format the full date (day, month, year)
+            // Pattern 1: MM/DD/YYYY format
+            const slashMatch = dateStr.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+            if (slashMatch) {
+                const month = parseInt(slashMatch[1]);
+                const day = parseInt(slashMatch[2]);
+                const year = parseInt(slashMatch[3]);
+                
+                // Check if it's MM/DD/YYYY (month <= 12) or DD/MM/YYYY
+                if (month <= 12 && day <= 31) {
+                    // Likely MM/DD/YYYY format
+                    const date = new Date(year, month - 1, day);
+                    return date.toLocaleDateString('en-US', { 
+                        year: 'numeric', 
+                        month: 'short', 
+                        day: 'numeric' 
+                    });
+                } else {
+                    // Likely DD/MM/YYYY format
+                    const date = new Date(year, day - 1, month);
+                    return date.toLocaleDateString('en-US', { 
+                        year: 'numeric', 
+                        month: 'short', 
+                        day: 'numeric' 
+                    });
+                }
+            }
+            
+            // Pattern 2: YYYY-MM-DD format
+            const dashMatch = dateStr.match(/(\d{4})-(\d{1,2})-(\d{1,2})/);
+            if (dashMatch) {
+                const year = parseInt(dashMatch[1]);
+                const month = parseInt(dashMatch[2]);
+                const day = parseInt(dashMatch[3]);
+                const date = new Date(year, month - 1, day);
+                return date.toLocaleDateString('en-US', { 
+                    year: 'numeric', 
+                    month: 'short', 
+                    day: 'numeric' 
+                });
+            }
+            
+            // Pattern 3: Try JavaScript Date parsing
+            try {
+                const date = new Date(dateStr);
+                if (!isNaN(date.getTime())) {
+                    return date.toLocaleDateString('en-US', { 
+                        year: 'numeric', 
+                        month: 'short', 
+                        day: 'numeric' 
+                    });
+                }
+            } catch (e) {
+                // Continue to next method
+            }
+            
+            // If all else fails, return as is
+            return dateStr;
+        }
+
+        function displayOrderTables(orderAnalysis, searchSymbol, filterStatus) {
+            const buyOrders = orderAnalysis.buy_orders || [];
+            const sellOrders = orderAnalysis.sell_orders || [];
+            
+            // Filter by symbol and status
+            const filteredBuyOrders = buyOrders.filter(order => {
+                const statusMatch = !filterStatus || (order.status && order.status === filterStatus);
+                const searchMatch = !searchSymbol || order.symbol.toLowerCase().includes(searchSymbol.toLowerCase());
+                return statusMatch && searchMatch;
+            });
+            
+            const filteredSellOrders = sellOrders.filter(order => {
+                const statusMatch = !filterStatus || (order.status && order.status === filterStatus);
+                const searchMatch = !searchSymbol || order.symbol.toLowerCase().includes(searchSymbol.toLowerCase());
+                return statusMatch && searchMatch;
+            });
+            
+            // Recalculate KPIs based on filtered data
+            const filteredTotalBought = filteredBuyOrders.reduce((sum, order) => sum + (order.total_value || 0), 0);
+            const filteredTotalSold = filteredSellOrders.reduce((sum, order) => sum + (order.total_value || 0), 0);
+            const filteredTotalProfit = filteredTotalSold - filteredTotalBought;
+            
+            // Update KPI values
+            const profitValue = document.getElementById('total-profit');
+            const boughtValue = document.getElementById('bought-total-value');
+            const sellValue = document.getElementById('sell-total-value');
+            
+            profitValue.textContent = formatCurrency(filteredTotalProfit);
+            profitValue.className = 'metric-value ' + (filteredTotalProfit >= 0 ? 'positive' : 'negative');
+            
+            boughtValue.textContent = formatCurrency(filteredTotalBought);
+            sellValue.textContent = formatCurrency(filteredTotalSold);
+            
+            // Display buy orders
+            const buyBody = document.getElementById('buy-orders-body');
+            if (filteredBuyOrders.length === 0) {
+                buyBody.innerHTML = '<tr><td colspan="5" style="padding: 20px; text-align: center; color: #999;">No buy orders found</td></tr>';
+            } else {
+                buyBody.innerHTML = filteredBuyOrders.map(order => {
+                    const dateValue = order.date || '';
+                    const dayValue = formatDate(dateValue);
+                    console.log('Buy order date:', dateValue, '-> formatted:', dayValue);
+                    return `
+                    <tr style="border-bottom: 1px solid #eee;">
+                        <td style="padding: 10px; font-weight: 500;">${order.symbol || 'N/A'}</td>
+                        <td style="padding: 10px; text-align: right;">$${(order.price || 0).toFixed(2)}</td>
+                        <td style="padding: 10px; text-align: right;">${(order.quantity || 0).toFixed(2)}</td>
+                        <td style="padding: 10px; text-align: right;">$${(order.total_value || 0).toFixed(2)}</td>
+                        <td style="padding: 10px; text-align: center; color: #666; font-size: 0.9em;">${dayValue}</td>
+                    </tr>
+                `;
+                }).join('');
+            }
+            
+            // Display sell orders
+            const sellBody = document.getElementById('sell-orders-body');
+            if (filteredSellOrders.length === 0) {
+                sellBody.innerHTML = '<tr><td colspan="6" style="padding: 20px; text-align: center; color: #999;">No sell orders found</td></tr>';
+            } else {
+                sellBody.innerHTML = filteredSellOrders.map(order => {
+                    const profit = order.profit || 0;
+                    const dateValue = order.date || '';
+                    const dayValue = formatDate(dateValue);
+                    console.log('Sell order date:', dateValue, '-> formatted:', dayValue);
+                    return `
+                    <tr style="border-bottom: 1px solid #eee;">
+                        <td style="padding: 10px; font-weight: 500;">${order.symbol || 'N/A'}</td>
+                        <td style="padding: 10px; text-align: right;">$${(order.price || 0).toFixed(2)}</td>
+                        <td style="padding: 10px; text-align: right;">${(order.quantity || 0).toFixed(2)}</td>
+                        <td style="padding: 10px; text-align: right;">$${(order.total_value || 0).toFixed(2)}</td>
+                        <td style="padding: 10px; text-align: right; color: ${profit >= 0 ? '#10b981' : '#ef4444'}; font-weight: 500;">${formatCurrency(profit)}</td>
+                        <td style="padding: 10px; text-align: center; color: #666; font-size: 0.9em;">${dayValue}</td>
+                    </tr>
+                `;
+                }).join('');
+            }
+        }
+
+        // Load data on page load
+        loadData();
+    </script>
+<!-- Removed stray duplicated script content appended after closing tags -->
+</body>
+</html>
