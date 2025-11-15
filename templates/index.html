@@ -182,12 +182,12 @@
 
         .filters-wrapper {
             background: rgba(255, 255, 255, 0.95);
-            border-radius: 20px;
-            padding: 25px 30px;
-            margin: 30px auto;
-            max-width: 900px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 20px 24px;
+            margin: 20px auto;
+            max-width: 800px;
+            box-shadow: 0 6px 24px rgba(0, 0, 0, 0.08);
+            backdrop-filter: blur(8px);
         }
 
         .filters-title {
@@ -233,10 +233,64 @@
         .autocomplete-item:hover { background: #f3f4f6; }
         .clear-btn {
             position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
-            background: #f3f4f6; border: 1px solid #d1d5db; color: #4b5563;
-            padding: 4px 8px; border-radius: 8px; cursor: pointer; font-size: 12px;
+            background: transparent; border: none; color: #9ca3af;
+            padding: 4px 8px; border-radius: 50%; cursor: pointer; font-size: 14px;
+            width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;
+            transition: all 0.2s ease;
         }
-        .clear-btn:hover { background: #e5e7eb; }
+        .clear-btn:hover { 
+            background: #f3f4f6; 
+            color: #6b7280;
+        }
+        .clear-btn:active {
+            background: #e5e7eb;
+        }
+
+        .metric-tooltip {
+            position: relative;
+            cursor: help;
+        }
+
+        .metric-tooltip::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1f2937;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 0.8em;
+            white-space: nowrap;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            z-index: 1000;
+            margin-bottom: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .metric-tooltip::before {
+            content: '';
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 6px solid transparent;
+            border-top-color: #1f2937;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            z-index: 1001;
+            margin-bottom: 2px;
+        }
+
+        .metric-tooltip:hover::after,
+        .metric-tooltip:hover::before {
+            opacity: 1;
+            visibility: visible;
+        }
 
         .filter-group {
             display: flex;
@@ -246,13 +300,14 @@
 
         .filter-label {
             color: #555;
-            font-size: 0.9em;
+            font-size: 0.8em;
             font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 0.5px;
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
+            margin-bottom: 6px;
         }
 
         .filter-label::before {
@@ -261,16 +316,17 @@
         }
 
         .filter-select {
-            padding: 12px 15px;
-            border-radius: 12px;
-            border: 2px solid #e0e0e0;
-            font-size: 1em;
+            padding: 10px 12px;
+            border-radius: 10px;
+            border: 1px solid #e0e0e0;
+            font-size: 0.95em;
             background: white;
             color: #333;
             cursor: pointer;
             transition: all 0.3s ease;
             font-weight: 500;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+            height: 42px;
         }
 
         .filter-select:hover {
@@ -294,16 +350,17 @@
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             border: none;
-            padding: 12px 25px;
-            border-radius: 12px;
-            font-size: 0.95em;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 0.85em;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+            box-shadow: 0 3px 12px rgba(102, 126, 234, 0.3);
             text-transform: uppercase;
             letter-spacing: 0.5px;
             align-self: end;
+            height: 42px;
         }
 
         .clear-filters-btn:hover {
@@ -446,199 +503,7 @@
         </div>
         <!-- View 2: Orders Dashboard -->
         <div id="view-orders" class="view-container">
-            <!-- 1) Filters Section -->
-            <div id="orders-filters-section" class="section-card">
-                <div class="section-title">Filters</div>
-                <div id="filters-container" class="filters-wrapper" style="display: none;">
-                    <div class="filters-title">Filter Options</div>
-                    <div class="filters-grid">
-                        <div class="filter-group">
-                            <label for="stock-search" class="filter-label">Stock Symbol</label>
-                            <div class="autocomplete-container">
-                                <input type="text" id="stock-search" class="filter-select" placeholder="Type to search symbols..." autocomplete="off" list="stock-list">
-                                <button id="stock-clear" class="clear-btn" type="button">Clear</button>
-                                <div id="stock-autocomplete" class="autocomplete-list"></div>
-                            </div>
-                            <datalist id="stock-list"></datalist>
-                        </div>
-                        <div class="filter-group">
-                            <label for="status-filter" class="filter-label">Status</label>
-                            <select id="status-filter" class="filter-select">
-                                <option value="">All Statuses</option>
-                            </select>
-                        </div>
-                        <div class="filter-group">
-                            <label for="date-range" class="filter-label">Date Range</label>
-                            <input type="text" id="date-range" class="filter-select" placeholder="Select date range">
-                        </div>
-                        <div class="filter-group">
-                            <label for="quick-range" class="filter-label">Quick Select</label>
-                            <select id="quick-range" class="filter-select">
-                                <option value="">Select</option>
-                                <option value="today">Today</option>
-                                <option value="week">This Week</option>
-                                <option value="month">This Month</option>
-                                <option value="mtd">MTD</option>
-                                <option value="qtd">QTD</option>
-                                <option value="ytd">YTD</option>
-                            </select>
-                        </div>
-                        <div class="filter-group">
-                            <label for="refresh-interval" class="filter-label">Auto Refresh (min)</label>
-                            <input type="number" id="refresh-interval" class="filter-select" min="0" step="1" placeholder="5">
-                        </div>
-                        <div class="filter-group">
-                            <button class="clear-filters-btn" onclick="clearFilters()">Reset All</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 2) KPI Metrics Section -->
-            <div id="orders-kpi-section" class="section-card">
-                <div class="section-title">Key Metrics</div>
-                <div id="order-kpi" class="metrics-container" style="display: none;">
-                    <div class="metric-card">
-                        <div class="metric-label">Total Profits</div>
-                        <div class="metric-value" id="total-profit">$0.00</div>
-                    </div>
-                    <div class="metric-card">
-                        <div class="metric-label">Bought Total Value</div>
-                        <div class="metric-value" id="bought-total-value">$0.00</div>
-                    </div>
-                    <div class="metric-card">
-                        <div class="metric-label">Sell Total Value</div>
-                        <div class="metric-value" id="sell-total-value">$0.00</div>
-                    </div>
-                    <div class="metric-card">
-                        <div class="metric-label">Total Positions Value</div>
-                        <div class="metric-value" id="total-positions-value">$0.00</div>
-                    </div>
-                    <div class="metric-card">
-                        <div class="metric-label">Orders Count</div>
-                        <div class="metric-value" id="orders-count">0</div>
-                    </div>
-                    <div class="metric-card">
-                        <div class="metric-label">Win Rate</div>
-                        <div class="metric-value" id="win-rate">0%</div>
-                    </div>
-                    <div class="metric-card">
-                        <div class="metric-label">Avg P&L / Trade</div>
-                        <div class="metric-value" id="avg-pnl">$0.00</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 3) Orders Data Section -->
-            <div id="orders-data-section" class="section-card">
-                <div class="section-title">Orders Data</div>
-                
-
-                <div id="order-tables" style="display: none; max-width: 1400px; margin: 0 auto;">
-                    <div style="display:flex;gap:10px;justify-content:flex-end;margin-bottom:10px;">
-                        <button class="clear-filters-btn" id="export-csv">Export CSV</button>
-                        <button class="clear-filters-btn" id="export-xlsx">Export Excel</button>
-                        <button class="clear-filters-btn" id="export-pdf">Export PDF</button>
-                    </div>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 30px;">
-                        <div class="chart-container">
-                            <div class="chart-title">Buy Orders</div>
-                            <div class="responsive-table">
-                                <table id="buy-orders-table" class="orders-table" role="table" aria-label="Buy Orders Table" style="width: 100%; border-collapse: collapse;">
-                                    <thead>
-                                        <tr>
-                                            <th scope="col" data-sort-key="symbol" aria-sort="none">Symbol</th>
-                                            <th scope="col" data-sort-key="name" aria-sort="none">Stock Name</th>
-                                            <th scope="col" data-sort-key="quantity" aria-sort="none" style="text-align: right;">Quantity</th>
-                                            <th scope="col" data-sort-key="price" aria-sort="none" style="text-align: right;">Price</th>
-                                            <th scope="col" data-sort-key="total" aria-sort="none" style="text-align: right;">Total Price</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="buy-orders-body">
-                                        <tr><td colspan="5" style="padding: 20px; text-align: center; color: #999;">No buy orders found</td></tr>
-                                    </tbody>
-                                    <tfoot>
-                                        <tr>
-                                            <td colspan="2" style="text-align:right;font-weight:600;">Totals:</td>
-                                            <td id="buy-total-qty" style="text-align:right;">0</td>
-                                            <td></td>
-                                            <td id="buy-total-amount" style="text-align:right;">$0.00</td>
-                                        </tr>
-                                    </tfoot>
-                                </table>
-                            </div>
-                            <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:8px;">
-                                <button class="clear-filters-btn" id="prev-buy">Prev</button>
-                                <span id="buy-page-info" style="align-self:center;color:#555;">Page 1</span>
-                                <button class="clear-filters-btn" id="next-buy">Next</button>
-                            </div>
-                        </div>
-
-                        <div class="chart-container">
-                            <div class="chart-title">Sell Orders</div>
-                            <div class="responsive-table">
-                                <table id="sell-orders-table" class="orders-table" role="table" aria-label="Sell Orders Table" style="width: 100%; border-collapse: collapse;">
-                                    <thead>
-                                        <tr>
-                                            <th scope="col" data-sort-key="symbol" aria-sort="none">Symbol</th>
-                                            <th scope="col" data-sort-key="name" aria-sort="none">Stock Name</th>
-                                            <th scope="col" data-sort-key="quantity" aria-sort="none" style="text-align: right;">Quantity</th>
-                                            <th scope="col" data-sort-key="price" aria-sort="none" style="text-align: right;">Price</th>
-                                            <th scope="col" data-sort-key="total" aria-sort="none" style="text-align: right;">Total Price</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="sell-orders-body">
-                                        <tr><td colspan="5" style="padding: 20px; text-align: center; color: #999;">No sell orders found</td></tr>
-                                    </tbody>
-                                    <tfoot>
-                                        <tr>
-                                            <td colspan="2" style="text-align:right;font-weight:600;">Totals:</td>
-                                            <td id="sell-total-qty" style="text-align:right;">0</td>
-                                            <td></td>
-                                            <td id="sell-total-amount" style="text-align:right;">$0.00</td>
-                                        </tr>
-                                    </tfoot>
-                                </table>
-                            </div>
-                            <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:8px;">
-                                <button class="clear-filters-btn" id="prev-sell">Prev</button>
-                                <span id="sell-page-info" style="align-self:center;color:#555;">Page 1</span>
-                                <button class="clear-filters-btn" id="next-sell">Next</button>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="chart-container">
-                        <div class="chart-title">Top 5 Traded Securities by Volume</div>
-                        <div class="chart-wrapper" style="height: 300px;">
-                            <canvas id="topSymbolsChart"></canvas>
-                        </div>
-                    </div>
-                    <div class="chart-container">
-                        <div class="chart-title" style="display:flex;justify-content:space-between;align-items:center;">
-                            <span>Open Positions</span>
-                            <button class="clear-filters-btn" id="refresh-prices">Refresh Prices</button>
-                        </div>
-                        <div class="responsive-table">
-                            <table style="width:100%;border-collapse:collapse;">
-                                <thead>
-                                    <tr style="background:#f5f5f5;">
-                                        <th style="padding:12px;text-align:left;border-bottom:2px solid #ddd;">Symbol</th>
-                                        <th style="padding:12px;text-align:right;border-bottom:2px solid #ddd;">Quantity</th>
-                                        <th style="padding:12px;text-align:right;border-bottom:2px solid #ddd;">Cost Basis</th>
-                                        <th style="padding:12px;text-align:right;border-bottom:2px solid #ddd;">Market Price</th>
-                                        <th style="padding:12px;text-align:right;border-bottom:2px solid #ddd;">Market Value</th>
-                                        <th style="padding:12px;text-align:right;border-bottom:2px solid #ddd;">Gain/Loss %</th>
-                                        <th style="padding:12px;text-align:center;border-bottom:2px solid #ddd;">Duration</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="positions-body">
-                                    <tr><td colspan="7" style="padding:20px;text-align:center;color:#999;">No open positions</td></tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <iframe id="orders-iframe" src="/orders" width="100%" height="1000" frameborder="0" style="border: none; border-radius: 16px; background: white;"></iframe>
         </div>
         </div><!-- end views-wrapper -->
 
@@ -679,7 +544,7 @@
                 // Display summary metrics
                 displayMetrics(data.summary_metrics);
                 
-                // View 2 is now Orders Dashboard embedded via iframe; skip legacy order analysis setup
+                // View 2 is now Orders Dashboard loaded via iframe; skip embedded order analysis setup
 
                 // Show charts for active view
                 createCharts(data);
@@ -758,6 +623,7 @@
         }
 
         function createCharts(data, mode) {
+            console.log('createCharts called with mode:', mode, 'data available:', !!data);
             // Store data globally
             window.currentData = data;
             
@@ -769,6 +635,7 @@
             
             // Get active view
             const activeView = document.querySelector('.view-container.active');
+            console.log('Active view:', activeView ? activeView.id : 'none');
             if (!activeView) return;
             
             if (mode === 'compare') {
@@ -777,10 +644,12 @@
                 return;
             }
             const viewId = activeView.id;
+            console.log('Processing viewId:', viewId);
             if (viewId === 'view-trends') {
                 createTrendsCharts(data);
             } else if (viewId === 'view-orders') {
-                createOrderAnalysisCharts(data);
+                // View 2 is now loaded via iframe, no need to create charts here
+                console.log('View 2 (Orders) loaded via iframe');
             }
         }
 
@@ -1001,7 +870,9 @@
             });
         }
 
+        // DEPRECATED: View 2 now uses iframe - this function is no longer called
         function createOrderAnalysisCharts(data) {
+            console.log('createOrderAnalysisCharts called with data:', data);
             const orderAnalysis = data.order_analysis || {};
             const ordersList = data.orders_list || [];
             
@@ -1025,14 +896,14 @@
             const totalSold = orderAnalysis.total_value_sold || 0;
             sellValue.textContent = formatCurrency(totalSold);
             sellValue.className = 'metric-value';
-            
-            // Total Positions Value KPI (currently held positions)
-            const positionsValue = document.getElementById('total-positions-value');
-            const totalPositions = orderAnalysis.total_positions_value || 0;
-            positionsValue.textContent = formatCurrency(totalPositions);
-            positionsValue.className = 'metric-value ' + (totalPositions >= 0 ? 'positive' : 'negative');
+
             
             kpiDiv.style.display = 'grid';
+            
+            // Fix order count calculation
+            const ordersCount = document.getElementById('orders-count');
+            const totalOrders = (orderAnalysis.buy_orders || []).length + (orderAnalysis.sell_orders || []).length;
+            ordersCount.textContent = String(totalOrders);
 
             
 
@@ -1073,11 +944,14 @@
                 stockList.appendChild(option);
             });
 
+            // Display initial order data
+            console.log('Initial order data:', orderAnalysis);
+            console.log('Buy orders:', orderAnalysis.buy_orders ? orderAnalysis.buy_orders.length : 0);
+            console.log('Sell orders:', orderAnalysis.sell_orders ? orderAnalysis.sell_orders.length : 0);
             displayOrderTables(orderAnalysis, '', '');
             const stockSearch = document.getElementById('stock-search');
             const dateRange = document.getElementById('date-range');
-            const quickRange = document.getElementById('quick-range');
-            const refreshIntervalInput = document.getElementById('refresh-interval');
+
             flatpickr(dateRange, { mode: 'range' });
             const persist = () => localStorage.setItem('wb:filters', JSON.stringify(lastFilter));
             const restore = () => {
@@ -1092,9 +966,7 @@
                 }
             };
             restore();
-            const refreshPersistKey = 'wb:autoRefreshMin';
-            const savedMin = localStorage.getItem(refreshPersistKey);
-            if (savedMin !== null) refreshIntervalInput.value = savedMin;
+
             statusFilter.onchange = function() {
                 lastFilter.status = this.value || '';
                 persist();
@@ -1149,26 +1021,7 @@
                 persist();
                 applyFiltersWithWorker();
             };
-            quickRange.onchange = function() {
-                const now = new Date();
-                const set = (start, end) => { lastFilter.start = start ? start.toISOString().slice(0,10) : null; lastFilter.end = end ? end.toISOString().slice(0,10) : null; };
-                if (this.value === 'today') {
-                    set(now, now);
-                } else if (this.value === 'week') {
-                    const d = new Date(now); const day = d.getDay(); const diff = d.getDate() - day + (day === 0 ? -6 : 1); const start = new Date(d.setDate(diff));
-                    const end = new Date(start); end.setDate(start.getDate() + 6); set(start, end);
-                } else if (this.value === 'month') {
-                    const start = new Date(now.getFullYear(), now.getMonth(), 1); const end = new Date(now.getFullYear(), now.getMonth() + 1, 0); set(start, end);
-                } else if (this.value === 'mtd') {
-                    const start = new Date(now.getFullYear(), now.getMonth(), 1); set(start, now);
-                } else if (this.value === 'qtd') {
-                    const qStartMonth = Math.floor(now.getMonth()/3)*3; const start = new Date(now.getFullYear(), qStartMonth, 1); set(start, now);
-                } else if (this.value === 'ytd') {
-                    const start = new Date(now.getFullYear(), 0, 1); set(start, now);
-                } else { set(null, null); }
-                persist();
-                applyFiltersWithWorker();
-            };
+
             attachSortHandlers();
             updateSortHeaders('buy-orders-table', buySortKey, buySortDir);
             updateSortHeaders('sell-orders-table', sellSortKey, sellSortDir);
@@ -1196,18 +1049,8 @@
                     renderPositions(positions, {});
                 }
             };
-            refreshBtn.click();
-            let autoTimer = null;
-            const setAutoRefresh = () => {
-                if (autoTimer) { clearInterval(autoTimer); autoTimer = null; }
-                const min = parseInt(refreshIntervalInput.value || '0');
-                localStorage.setItem(refreshPersistKey, String(min));
-                if (min > 0) {
-                    autoTimer = setInterval(() => { loadData(); }, min * 60 * 1000);
-                }
-            };
-            refreshIntervalInput.onchange = setAutoRefresh;
-            setAutoRefresh();
+
+
             const prevBuy = document.getElementById('prev-buy');
             const nextBuy = document.getElementById('next-buy');
             const prevSell = document.getElementById('prev-sell');
@@ -1247,24 +1090,36 @@
         }
 
         function renderFilteredTables(filteredBuyOrders, filteredSellOrders, totals) {
+            console.log('renderFilteredTables called with:', filteredBuyOrders.length, filteredSellOrders.length);
             const filteredTotalBought = totals.totalBought || 0;
             const filteredTotalSold = totals.totalSold || 0;
             const filteredTotalProfit = totals.totalProfit || 0;
             const profitValue = document.getElementById('total-profit');
             const boughtValue = document.getElementById('bought-total-value');
             const sellValue = document.getElementById('sell-total-value');
+            const ordersCount = document.getElementById('orders-count');
+            
+            // Update KPIs with filtered totals
             profitValue.textContent = formatCurrency(filteredTotalProfit);
             profitValue.className = 'metric-value ' + (filteredTotalProfit >= 0 ? 'positive' : 'negative');
             boughtValue.textContent = formatCurrency(filteredTotalBought);
             sellValue.textContent = formatCurrency(filteredTotalSold);
+            
+            // Update order count dynamically based on filtered data
+            const totalFilteredOrders = filteredBuyOrders.length + filteredSellOrders.length;
+            ordersCount.textContent = String(totalFilteredOrders);
+            console.log('Updated order count to:', totalFilteredOrders);
             const buyBody = document.getElementById('buy-orders-body');
             const buyStart = (buyPage - 1) * pageSize;
             const buySlice = filteredBuyOrders.slice(buyStart, buyStart + pageSize);
             const buyInfo = document.getElementById('buy-page-info');
             if (buyInfo) buyInfo.textContent = `Page ${buyPage}`;
+            console.log('Updating buy table with', buySlice.length, 'orders');
             if (buySlice.length === 0) {
+                console.log('No buy orders to display');
                 buyBody.innerHTML = '<tr><td colspan="5" style="padding: 20px; text-align: center; color: #999;">No buy orders found</td></tr>';
             } else {
+                console.log('Rendering', buySlice.length, 'buy orders');
                 buyBody.innerHTML = buySlice.map(order => {
                     const name = resolveStockName(order.symbol || '');
                     return `
@@ -1289,9 +1144,12 @@
             const sellSlice = filteredSellOrders.slice(sellStart, sellStart + pageSize);
             const sellInfo = document.getElementById('sell-page-info');
             if (sellInfo) sellInfo.textContent = `Page ${sellPage}`;
+            console.log('Updating sell table with', sellSlice.length, 'orders');
             if (sellSlice.length === 0) {
+                console.log('No sell orders to display');
                 sellBody.innerHTML = '<tr><td colspan="5" style="padding: 20px; text-align: center; color: #999;">No sell orders found</td></tr>';
             } else {
+                console.log('Rendering', sellSlice.length, 'sell orders');
                 sellBody.innerHTML = sellSlice.map(order => {
                     const name = resolveStockName(order.symbol || '');
                     return `
@@ -1315,14 +1173,8 @@
 
         function renderOrderMetrics(metrics, topSymbols) {
             const ordersCount = document.getElementById('orders-count');
-            const winRateEl = document.getElementById('win-rate');
-            const avgPnlEl = document.getElementById('avg-pnl');
             const trades = (metrics && metrics.trades) || 0;
-            const winRate = (metrics && metrics.winRate) ? (metrics.winRate * 100) : 0;
-            const avgPnL = (metrics && metrics.avgPnL) || 0;
             ordersCount.textContent = String(trades);
-            winRateEl.textContent = `${winRate.toFixed(1)}%`;
-            avgPnlEl.textContent = formatCurrency(avgPnL);
             const ctx = document.getElementById('topSymbolsChart').getContext('2d');
             if (charts.topSymbols) charts.topSymbols.destroy();
             const labels = (topSymbols || []).map(t => t.symbol);
@@ -1605,8 +1457,12 @@
         }
 
         function displayOrderTables(orderAnalysis, searchSymbol, filterStatus) {
+            console.log('displayOrderTables called with:', orderAnalysis, searchSymbol, filterStatus);
             const buyOrders = orderAnalysis.buy_orders || [];
             const sellOrders = orderAnalysis.sell_orders || [];
+            
+            console.log('Raw buy orders:', buyOrders.length);
+            console.log('Raw sell orders:', sellOrders.length);
             
             // Filter by symbol and status
             const filteredBuyOrders = buyOrders.filter(order => {
@@ -1620,6 +1476,9 @@
                 const searchMatch = !searchSymbol || order.symbol.toLowerCase().includes(searchSymbol.toLowerCase());
                 return statusMatch && searchMatch;
             });
+            
+            console.log('Filtered buy orders:', filteredBuyOrders.length);
+            console.log('Filtered sell orders:', filteredSellOrders.length);
             
             // Recalculate KPIs based on filtered data
             const filteredTotalBought = filteredBuyOrders.reduce((sum, order) => sum + (order.total_value || 0), 0);

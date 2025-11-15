@@ -21,9 +21,7 @@ SCOPE = [
 # Google Sheet ID from the URL
 SPREADSHEET_ID = "1pzKHZ5xPT6oMMQ4wNNGL-Z1I-81qa_MtjI_seL5M1Ug"
 WORKSHEET_GID = "1100303320"
-# Orders Sheet for View 2
-ORDERS_SPREADSHEET_ID = "1H3mMQIYYHzMIs6nGJKrhYcjXYo5-ytxEv55gM67wT1M"
-ORDERS_WORKSHEET_GID = "0"
+
 USE_PUBLIC_ACCESS = os.getenv('USE_PUBLIC_ACCESS', 'false').lower() == 'true'
 ENABLE_QUOTES = os.getenv('ENABLE_QUOTES', 'true').lower() == 'true'
 USE_POSITIONS_SHEET = os.getenv('USE_POSITIONS_SHEET', 'false').lower() == 'true'
@@ -342,257 +340,76 @@ def parse_float(value, default=0):
     except:
         return default
 
-def process_order_analysis(orders_data):
-    """Process data for order analysis view from orders sheet"""
+
+
+def process_orders_list(orders_data):
+    result = []
     if not orders_data:
-        return {
-            'total_profit': 0,
-            'stock_symbols': [],
-            'buy_orders': [],
-            'sell_orders': []
-        }
-    
-    # Debug: Print first row to see column names
-    if orders_data:
-        print("Sample row keys:", list(orders_data[0].keys()) if orders_data else [])
-        print("Sample row values:", list(orders_data[0].values())[:5] if orders_data else [])
-    
-    # Get all unique stock symbols
-    stock_symbols = set()
-    buy_orders = []
-    sell_orders = []
-    total_profit = 0
-    
-    # Process each row - try to identify columns
-    for row in orders_data:
-        # Try to find stock symbol column (case-insensitive, more variations)
-        symbol = None
-        symbol_keywords = ['symbol', 'ticker', 'stock', 'instrument', 'security', 'name']
-        for key in row.keys():
-            key_lower = key.lower()
-            if any(keyword in key_lower for keyword in symbol_keywords):
-                symbol = row.get(key, '').strip()
-                if symbol:
+        return result
+    for i, row in enumerate(orders_data):
+        keys = {k.lower(): k for k in row.keys()}
+        oid = None
+        for k in keys:
+            if 'side' in k:
+                continue
+            if any(x in k for x in ['order id', 'orderid', ' id ', 'id', 'trade id', 'transaction id']):
+                v = row[keys[k]]
+                oid = str(v).strip() if v is not None else None
+                if oid:
                     break
-        
-        if not symbol:
-            # Try first column as symbol
-            first_val = list(row.values())[0] if row else ''
-            if first_val and not str(first_val).replace('.', '').replace('-', '').isdigit():
-                symbol = str(first_val).strip()
-        
-        if symbol:
-            stock_symbols.add(symbol)
-        
-        # Try to find order type (Buy/Sell) - more variations
-        order_type = None
-        type_keywords = ['type', 'side', 'action', 'direction', 'order type', 'order_type']
-        for key in row.keys():
-            key_lower = key.lower()
-            if any(keyword in key_lower for keyword in type_keywords):
-                order_type = str(row.get(key, '')).strip().upper()
-                if order_type:
+        cust = None
+        for k in keys:
+            if any(x in k for x in ['customer', 'customer name', 'client', 'account', 'account name', 'name']):
+                v = row[keys[k]]
+                cust = str(v).strip() if v is not None else None
+                if cust:
                     break
-        
-        # Try to find price - more variations
-        price = 0
-        price_keywords = ['price', 'execution price', 'exec_price', 'fill price', 'fill_price', 
-                         'trade price', 'trade_price', 'avg price', 'avg_price', 'average price']
-        for key in row.keys():
-            key_lower = key.lower()
-            if any(keyword in key_lower for keyword in price_keywords):
-                price_val = row.get(key, '')
-                price = parse_float(price_val)
-                if price > 0:
-                    break
-        
-        # If price still 0, try to find any numeric column that might be price
-        if price == 0:
-            for key, value in row.items():
-                key_lower = key.lower()
-                # Skip if it's clearly not a price column
-                if any(skip in key_lower for skip in ['quantity', 'qty', 'shares', 'profit', 'pnl', 'date', 'time', 'symbol', 'ticker']):
-                    continue
-                val = parse_float(value)
-                # If it's a reasonable price (between 0.01 and 10000)
-                if 0.01 <= val <= 10000:
-                    price = val
-                    break
-        
-        # Try to find quantity - more variations
-        quantity = 0
-        qty_keywords = ['quantity', 'qty', 'shares', 'share', 'volume', 'size', 'amount', 
-                       'executed', 'filled', 'exec_qty', 'fill_qty']
-        for key in row.keys():
-            key_lower = key.lower()
-            if any(keyword in key_lower for keyword in qty_keywords):
-                qty_val = row.get(key, '')
-                quantity = parse_float(qty_val)
-                if quantity > 0:
-                    break
-        
-        # Try to find profit/P&L - more variations
-        profit = 0
-        profit_keywords = ['profit', 'pnl', 'p&l', 'gain', 'loss', 'realized', 'unrealized', 
-                          'profit/loss', 'profit_loss', 'net pnl', 'net_pnl']
-        for key in row.keys():
-            key_lower = key.lower()
-            if any(keyword in key_lower for keyword in profit_keywords):
-                profit_val = row.get(key, '')
-                profit = parse_float(profit_val)
-                break
-        
-        # Try to find date - prioritize "Filled Time" and "Placed Time" columns
-        date_str = None
-        
-        # First, try to get "Filled Time" or "Placed Time" (these have actual dates)
-        for key in row.keys():
-            key_lower = key.lower()
-            if 'filled time' in key_lower or 'placed time' in key_lower:
-                date_val = row.get(key, '')
-                if date_val:
-                    date_str = str(date_val).strip()
-                    # Extract just the date part (before the time)
-                    if ' ' in date_str:
-                        date_str = date_str.split(' ')[0]  # Get "11/04/2025" from "11/04/2025 14:07:30 EST"
-                    break
-        
-        # If not found, try other date keywords (but skip "Time-in-Force" which has "DAY")
-        if not date_str:
-            date_keywords = ['date', 'timestamp', 'execution date', 'exec_date', 
-                            'fill date', 'fill_date', 'trade date', 'trade_date',
-                            'buy date', 'buy_date', 'sell date', 'sell_date', 'order date', 'order_date']
-            for key in row.keys():
-                key_lower = key.lower()
-                # Skip "Time-in-Force" as it contains "DAY" not a date
-                if 'time-in-force' in key_lower or 'time_in_force' in key_lower:
-                    continue
-                if any(keyword in key_lower for keyword in date_keywords):
-                    date_val = row.get(key, '')
-                    date_str = str(date_val) if date_val else ''
-                    if date_str and date_str.lower() != 'day' and date_str.lower() != 'n/a':
-                        # Extract date part if it contains time
-                        if ' ' in date_str:
-                            date_str = date_str.split(' ')[0]
-                        break
-        
-        # If still no date, try to find any column that looks like a date
-        if not date_str or date_str.lower() == 'day':
-            for key, value in row.items():
-                key_lower = key.lower()
-                # Skip if it's clearly not a date
-                if any(skip in key_lower for skip in ['symbol', 'price', 'quantity', 'qty', 'shares', 'profit', 'pnl', 'amount', 'value', 'total', 'type', 'side', 'time-in-force', 'time_in_force', 'status', 'name']):
-                    continue
-                val_str = str(value).strip()
-                # Check if it looks like a date (contains numbers and separators)
-                if val_str and (('/' in val_str and any(c.isdigit() for c in val_str)) or 
-                               ('-' in val_str and any(c.isdigit() for c in val_str)) or
-                               (len(val_str) >= 8 and any(c.isdigit() for c in val_str))):
-                    date_str = val_str
-                    # Extract date part if it contains time
-                    if ' ' in date_str:
-                        date_str = date_str.split(' ')[0]
-                    break
-        
-        # Calculate total value
-        total_value = price * quantity if price and quantity else 0
-        
-        # If total_value is 0 but we have price or quantity, try to calculate from other columns
-        if total_value == 0:
-            # Look for total value column directly
-            for key in row.keys():
-                key_lower = key.lower()
-                if any(keyword in key_lower for keyword in ['total', 'value', 'amount', 'cost', 'principal']):
-                    total_value = parse_float(row.get(key, 0))
-                    if total_value > 0:
-                        break
-        
-        # Try to find status
         status = None
-        status_keywords = ['status', 'state', 'order status', 'order_status']
-        for key in row.keys():
-            key_lower = key.lower()
-            if any(keyword in key_lower for keyword in status_keywords):
-                status_val = row.get(key, '')
-                status = str(status_val).strip() if status_val else None
+        for k in keys:
+            if any(x in k for x in ['status', 'state']):
+                v = row[keys[k]]
+                status = str(v).strip() if v is not None else None
                 if status:
                     break
-        
-        order_data = {
-            'symbol': symbol or 'N/A',
-            'type': order_type or 'UNKNOWN',
-            'price': price,
-            'quantity': quantity,
-            'total_value': total_value,
-            'profit': profit,
-            'date': date_str or '',
+        date_val = None
+        for k in keys:
+            if any(x in k for x in ['filled time', 'placed time', 'order date', 'date', 'timestamp']):
+                v = row[keys[k]]
+                date_val = str(v).strip() if v is not None else None
+                if date_val:
+                    if ' ' in date_val:
+                        date_val = date_val.split(' ')[0]
+                    break
+        total = 0.0
+        for k in keys:
+            if any(x in k for x in ['amount', 'value']) and not any(y in k for y in ['qty', 'quantity', 'shares']):
+                total = parse_float(row[keys[k]], 0)
+                if total != 0:
+                    break
+        if total == 0:
+            price = 0.0
+            qty = 0.0
+            for k in keys:
+                if 'price' in k:
+                    price = parse_float(row[keys[k]], 0)
+                    if price != 0:
+                        break
+            for k in keys:
+                if any(x in k for x in ['quantity', 'qty', 'shares', 'filled']):
+                    qty = parse_float(row[keys[k]], 0)
+                    if qty != 0:
+                        break
+            total = price * qty
+        if not oid:
+            oid = f"ORD-{i+1}"
+        result.append({
+            'id': oid,
+            'customer': cust or 'N/A',
+            'date': date_val or '',
             'status': status or 'N/A',
-            'raw': row  # Keep raw data for reference
-        }
-        
-        # Determine if buy or sell
-        if order_type in ['BUY', 'B', 'BUYING', 'BUY ORDER']:
-            buy_orders.append(order_data)
-        elif order_type in ['SELL', 'S', 'SELLING', 'SELL ORDER']:
-            sell_orders.append(order_data)
-            total_profit += profit
-        else:
-            # If no clear type, try to infer from profit or other indicators
-            # If profit exists and is not 0, it's likely a sell
-            if profit != 0:
-                sell_orders.append(order_data)
-                total_profit += profit
-            elif symbol:
-                # Default to buy if unclear but has symbol
-                buy_orders.append(order_data)
-    
-    # Sort orders by date if available
-    def sort_by_date(order):
-        if order['date']:
-            date_obj = parse_date(order['date'])
-            return date_obj if date_obj else datetime.min
-        return datetime.min
-    
-    buy_orders.sort(key=sort_by_date, reverse=True)
-    sell_orders.sort(key=sort_by_date, reverse=True)
-    
-    # Get all unique statuses
-    statuses = set()
-    for order in buy_orders + sell_orders:
-        if order.get('status') and order['status'] != 'N/A':
-            statuses.add(order['status'])
-    
-    # Calculate total profit as: total value sold - total value bought
-    total_value_bought = sum(order['total_value'] for order in buy_orders)
-    total_value_sold = sum(order['total_value'] for order in sell_orders)
-    calculated_total_profit = total_value_sold - total_value_bought
-    
-    # Use calculated profit if it makes sense, otherwise use sum of individual profits
-    if calculated_total_profit != 0 or total_profit == 0:
-        total_profit = calculated_total_profit
-    
-    # Calculate total positions value (current held positions = bought - sold)
-    total_positions_value = total_value_bought - total_value_sold
-    
-    print(f"Processed {len(buy_orders)} buy orders and {len(sell_orders)} sell orders")
-    print(f"Total value bought: ${total_value_bought:.2f}, Total value sold: ${total_value_sold:.2f}")
-    print(f"Total profit: ${total_profit:.2f}")
-    print(f"Total positions value (held): ${total_positions_value:.2f}")
-    if buy_orders:
-        print(f"Sample buy order: {buy_orders[0]}")
-    if sell_orders:
-        print(f"Sample sell order: {sell_orders[0]}")
-    
-    return {
-        'total_profit': total_profit,
-        'total_value_bought': total_value_bought,
-        'total_value_sold': total_value_sold,
-        'total_positions_value': total_positions_value,
-        'stock_symbols': sorted(list(stock_symbols)),
-        'statuses': sorted(list(statuses)),
-        'buy_orders': buy_orders,
-        'sell_orders': sell_orders
-    }
+            'total': float(total)
+        })
+    return result
 
 def extract_positions_from_sheet(rows):
     positions = []
@@ -929,4 +746,4 @@ def get_raw_data():
     return jsonify(data)
 
 if __name__ == '__main__':
-    app.run(debug=True, host='127.0.0.1', port=5000)
+    app.run(debug=True, host='127.0.0.1', port=5001)
