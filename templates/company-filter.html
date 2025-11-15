@@ -1,0 +1,925 @@
+<!-- Enhanced Company Filter Component -->
+<div class="company-filter-container">
+    <div class="filter-section">
+        <label class="filter-label" for="company-search">
+            <span class="search-icon">🔍</span>
+            STOCK COMPANY
+        </label>
+        <div class="company-dropdown-container">
+            <div class="company-search-wrapper">
+                <input 
+                    type="text" 
+                    id="company-search" 
+                    class="company-search-input" 
+                    placeholder="Search company..."
+                    autocomplete="off"
+                    aria-label="Search stock companies"
+                    aria-expanded="false"
+                    aria-controls="company-dropdown"
+                >
+                <button 
+                    id="company-clear" 
+                    class="company-clear-btn" 
+                    type="button" 
+                    aria-label="Clear company search"
+                    style="display: none;"
+                >✕</button>
+                <button 
+                    id="company-dropdown-toggle" 
+                    class="dropdown-toggle" 
+                    type="button"
+                    aria-label="Toggle company dropdown"
+                >
+                    <span class="dropdown-arrow"></span>
+                </button>
+            </div>
+            <div id="company-dropdown" class="company-dropdown" role="listbox" aria-label="Company options">
+                <div class="dropdown-header">
+                    <div class="dropdown-title">Select Company</div>
+                    <div class="dropdown-count">
+                        <span id="company-count">0</span> companies
+                    </div>
+                </div>
+                <div class="dropdown-search">
+                    <input 
+                        type="text" 
+                        id="dropdown-search-input" 
+                        class="dropdown-search-input" 
+                        placeholder="Type to filter companies..."
+                        autocomplete="off"
+                    >
+                </div>
+                <div class="dropdown-loading" id="company-loading" style="display: none;">
+                    <div class="loading-spinner"></div>
+                    <span>Loading companies...</span>
+                </div>
+                <div class="dropdown-content" id="company-dropdown-content">
+                    <!-- Company options will be populated here -->
+                </div>
+                <div class="dropdown-footer">
+                    <button id="clear-all-companies" class="dropdown-clear-btn">Clear Selection</button>
+                    <button id="apply-companies" class="dropdown-apply-btn">Apply Filter</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Enhanced Company Filter Component Styles */
+.company-filter-container {
+    width: 100%;
+    max-width: 400px;
+}
+
+.filter-section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.filter-label {
+    color: #555;
+    font-size: 0.8em;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 6px;
+}
+
+.search-icon {
+    font-size: 1.1em;
+}
+
+.company-dropdown-container {
+    position: relative;
+    width: 100%;
+}
+
+.company-search-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    background: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 10px;
+    transition: all 0.3s ease;
+}
+
+.company-search-wrapper:hover {
+    border-color: #667eea;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+    transform: translateY(-2px);
+}
+
+.company-search-wrapper:focus-within {
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    outline: none;
+}
+
+.company-search-input {
+    flex: 1;
+    padding: 12px 16px;
+    border: none;
+    background: transparent;
+    font-size: 0.95em;
+    color: #333;
+    outline: none;
+    min-width: 0;
+}
+
+.company-search-input::placeholder {
+    color: #9ca3af;
+    font-weight: 400;
+}
+
+.company-clear-btn {
+    background: transparent;
+    border: none;
+    color: #9ca3af;
+    padding: 8px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 14px;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    margin-right: 4px;
+}
+
+.company-clear-btn:hover {
+    background: #f3f4f6;
+    color: #6b7280;
+}
+
+.company-clear-btn:active {
+    background: #e5e7eb;
+}
+
+.dropdown-toggle {
+    background: transparent;
+    border: none;
+    padding: 8px 12px;
+    cursor: pointer;
+    border-left: 1px solid #e5e7eb;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.dropdown-toggle:hover {
+    background: #f9fafb;
+}
+
+.dropdown-arrow {
+    width: 0;
+    height: 0;
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    border-top: 6px solid #6b7280;
+    transition: transform 0.2s ease;
+}
+
+.dropdown-toggle.active .dropdown-arrow {
+    transform: rotate(180deg);
+    border-top-color: #667eea;
+}
+
+.company-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+    z-index: 1000;
+    max-height: 400px;
+    overflow: hidden;
+    display: none;
+    margin-top: 4px;
+}
+
+.company-dropdown.active {
+    display: block;
+    animation: dropdownSlideIn 0.2s ease-out;
+}
+
+@keyframes dropdownSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.dropdown-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px 12px;
+    border-bottom: 1px solid #f3f4f6;
+}
+
+.dropdown-title {
+    font-weight: 600;
+    color: #374151;
+    font-size: 0.95em;
+}
+
+.dropdown-count {
+    font-size: 0.8em;
+    color: #6b7280;
+    background: #f3f4f6;
+    padding: 4px 8px;
+    border-radius: 12px;
+}
+
+.dropdown-search {
+    padding: 12px 20px;
+    border-bottom: 1px solid #f3f4f6;
+}
+
+.dropdown-search-input {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    font-size: 0.9em;
+    outline: none;
+    transition: all 0.2s ease;
+}
+
+.dropdown-search-input:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.dropdown-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+    color: #6b7280;
+    font-size: 0.9em;
+    gap: 12px;
+}
+
+.loading-spinner {
+    width: 20px;
+    height: 20px;
+    border: 2px solid #f3f4f6;
+    border-top: 2px solid #667eea;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.dropdown-content {
+    max-height: 250px;
+    overflow-y: auto;
+    padding: 8px 0;
+}
+
+.dropdown-content::-webkit-scrollbar {
+    width: 6px;
+}
+
+.dropdown-content::-webkit-scrollbar-track {
+    background: #f3f4f6;
+}
+
+.dropdown-content::-webkit-scrollbar-thumb {
+    background: #d1d5db;
+    border-radius: 3px;
+}
+
+.dropdown-content::-webkit-scrollbar-thumb:hover {
+    background: #9ca3af;
+}
+
+.company-option {
+    display: flex;
+    align-items: center;
+    padding: 12px 20px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border-left: 3px solid transparent;
+}
+
+.company-option:hover {
+    background: #f9fafb;
+    border-left-color: #667eea;
+}
+
+.company-option.selected {
+    background: #eef2ff;
+    border-left-color: #667eea;
+}
+
+.company-option.keyboard-selected {
+    background: #f3f4f6;
+    border-left-color: #9ca3af;
+}
+
+.company-checkbox {
+    width: 16px;
+    height: 16px;
+    margin-right: 12px;
+    border: 2px solid #d1d5db;
+    border-radius: 3px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.company-option.selected .company-checkbox {
+    background: #667eea;
+    border-color: #667eea;
+}
+
+.company-option.selected .company-checkbox::after {
+    content: '✓';
+    color: white;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.company-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.company-name {
+    font-weight: 500;
+    color: #374151;
+    font-size: 0.9em;
+    margin-bottom: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.company-symbol {
+    color: #6b7280;
+    font-size: 0.8em;
+    font-weight: 500;
+}
+
+.company-sector {
+    color: #9ca3af;
+    font-size: 0.75em;
+    margin-top: 2px;
+}
+
+.dropdown-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    border-top: 1px solid #f3f4f6;
+    background: #f9fafb;
+}
+
+.dropdown-clear-btn, .dropdown-apply-btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.85em;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.dropdown-clear-btn {
+    background: white;
+    color: #6b7280;
+    border: 1px solid #d1d5db;
+}
+
+.dropdown-clear-btn:hover {
+    background: #f3f4f6;
+    color: #374151;
+}
+
+.dropdown-apply-btn {
+    background: #667eea;
+    color: white;
+}
+
+.dropdown-apply-btn:hover {
+    background: #5a67d8;
+    transform: translateY(-1px);
+}
+
+.no-results {
+    text-align: center;
+    padding: 40px 20px;
+    color: #6b7280;
+    font-size: 0.9em;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .company-filter-container {
+        max-width: 100%;
+    }
+    
+    .company-dropdown {
+        max-height: 300px;
+    }
+    
+    .dropdown-content {
+        max-height: 200px;
+    }
+    
+    .dropdown-header, .dropdown-footer {
+        padding: 12px 16px;
+    }
+    
+    .company-option {
+        padding: 10px 16px;
+    }
+}
+
+@media (max-width: 480px) {
+    .company-search-input {
+        padding: 10px 12px;
+        font-size: 16px; /* Prevent zoom on iOS */
+    }
+    
+    .company-dropdown {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        max-height: none;
+        border-radius: 0;
+        margin: 0;
+    }
+    
+    .dropdown-footer {
+        position: sticky;
+        bottom: 0;
+        background: white;
+    }
+}
+
+/* Accessibility */
+.company-option:focus {
+    outline: 2px solid #667eea;
+    outline-offset: -2px;
+}
+
+.company-search-input:focus,
+.dropdown-search-input:focus {
+    outline: 2px solid #667eea;
+    outline-offset: 2px;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    .company-dropdown {
+        border: 2px solid #000;
+    }
+    
+    .company-option:hover {
+        background: #000;
+        color: #fff;
+    }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    .company-dropdown,
+    .company-option,
+    .dropdown-apply-btn {
+        animation: none;
+        transition: none;
+    }
+}
+</style>
+
+<script>
+// Enhanced Company Filter Component
+class CompanyFilter {
+    constructor() {
+        this.companies = [];
+        this.filteredCompanies = [];
+        this.selectedCompanies = new Set();
+        this.isOpen = false;
+        this.isLoading = false;
+        this.keyboardIndex = -1;
+        this.searchTerm = '';
+        this.dropdownSearchTerm = '';
+        
+        this.init();
+    }
+
+    init() {
+        this.setupElements();
+        this.setupEventListeners();
+        this.loadCompanies();
+    }
+
+    setupElements() {
+        this.elements = {
+            container: document.querySelector('.company-dropdown-container'),
+            searchInput: document.getElementById('company-search'),
+            clearBtn: document.getElementById('company-clear'),
+            toggleBtn: document.getElementById('company-dropdown-toggle'),
+            dropdown: document.getElementById('company-dropdown'),
+            dropdownSearchInput: document.getElementById('dropdown-search-input'),
+            dropdownContent: document.getElementById('company-dropdown-content'),
+            dropdownCount: document.getElementById('company-count'),
+            loading: document.getElementById('company-loading'),
+            clearAllBtn: document.getElementById('clear-all-companies'),
+            applyBtn: document.getElementById('apply-companies')
+        };
+    }
+
+    setupEventListeners() {
+        // Main search input
+        this.elements.searchInput.addEventListener('input', (e) => {
+            this.handleSearchInput(e.target.value);
+        });
+
+        this.elements.searchInput.addEventListener('focus', () => {
+            this.openDropdown();
+        });
+
+        this.elements.searchInput.addEventListener('keydown', (e) => {
+            this.handleKeyboardNavigation(e);
+        });
+
+        // Clear button
+        this.elements.clearBtn.addEventListener('click', () => {
+            this.clearSearch();
+        });
+
+        // Toggle button
+        this.elements.toggleBtn.addEventListener('click', () => {
+            this.toggleDropdown();
+        });
+
+        // Dropdown search
+        this.elements.dropdownSearchInput.addEventListener('input', (e) => {
+            this.filterDropdownOptions(e.target.value);
+        });
+
+        // Clear all and apply buttons
+        this.elements.clearAllBtn.addEventListener('click', () => {
+            this.clearAllSelections();
+        });
+
+        this.elements.applyBtn.addEventListener('click', () => {
+            this.applyFilter();
+        });
+
+        // Click outside to close
+        document.addEventListener('click', (e) => {
+            if (!this.elements.container.contains(e.target)) {
+                this.closeDropdown();
+            }
+        });
+
+        // Escape key to close
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && this.isOpen) {
+                this.closeDropdown();
+            }
+        });
+    }
+
+    async loadCompanies() {
+        this.setLoading(true);
+        
+        try {
+            // Try to get companies from existing data first
+            const companies = await this.extractCompaniesFromOrders();
+            
+            if (companies.length === 0) {
+                // Fallback to mock data if no companies found
+                this.companies = this.getMockCompanies();
+            } else {
+                this.companies = companies;
+            }
+            
+            this.filteredCompanies = [...this.companies];
+            this.updateDropdownCount();
+            this.renderDropdownOptions();
+            
+        } catch (error) {
+            console.error('Error loading companies:', error);
+            this.companies = this.getMockCompanies();
+            this.filteredCompanies = [...this.companies];
+            this.renderDropdownOptions();
+        } finally {
+            this.setLoading(false);
+        }
+    }
+
+    async extractCompaniesFromOrders() {
+        // Extract unique companies from existing orders data
+        const ordersData = DashboardState.ordersData;
+        const companies = new Map();
+        
+        if (ordersData.buy && ordersData.sell) {
+            const allOrders = [...ordersData.buy, ...ordersData.sell];
+            
+            allOrders.forEach(order => {
+                if (order.symbol && !companies.has(order.symbol)) {
+                    companies.set(order.symbol, {
+                        symbol: order.symbol,
+                        name: order.symbol, // Will be enhanced with real company names
+                        sector: this.getSectorForSymbol(order.symbol)
+                    });
+                }
+            });
+        }
+        
+        return Array.from(companies.values()).sort((a, b) => a.symbol.localeCompare(b.symbol));
+    }
+
+    getMockCompanies() {
+        return [
+            { symbol: 'AAPL', name: 'Apple Inc.', sector: 'Technology' },
+            { symbol: 'GOOGL', name: 'Alphabet Inc.', sector: 'Technology' },
+            { symbol: 'MSFT', name: 'Microsoft Corporation', sector: 'Technology' },
+            { symbol: 'AMZN', name: 'Amazon.com Inc.', sector: 'Consumer Discretionary' },
+            { symbol: 'TSLA', name: 'Tesla Inc.', sector: 'Consumer Discretionary' },
+            { symbol: 'META', name: 'Meta Platforms Inc.', sector: 'Technology' },
+            { symbol: 'NVDA', name: 'NVIDIA Corporation', sector: 'Technology' },
+            { symbol: 'JPM', name: 'JPMorgan Chase & Co.', sector: 'Financials' },
+            { symbol: 'JNJ', name: 'Johnson & Johnson', sector: 'Healthcare' },
+            { symbol: 'V', name: 'Visa Inc.', sector: 'Financials' },
+            { symbol: 'PG', name: 'Procter & Gamble Co.', sector: 'Consumer Staples' },
+            { symbol: 'HD', name: 'Home Depot Inc.', sector: 'Consumer Discretionary' },
+            { symbol: 'UNH', name: 'UnitedHealth Group Inc.', sector: 'Healthcare' },
+            { symbol: 'MA', name: 'Mastercard Inc.', sector: 'Financials' },
+            { symbol: 'BAC', name: 'Bank of America Corp.', sector: 'Financials' },
+            { symbol: 'DIS', name: 'Walt Disney Co.', sector: 'Communication Services' },
+            { symbol: 'ADBE', name: 'Adobe Inc.', sector: 'Technology' },
+            { symbol: 'NFLX', name: 'Netflix Inc.', sector: 'Communication Services' },
+            { symbol: 'CRM', name: 'Salesforce Inc.', sector: 'Technology' },
+            { symbol: 'ACN', name: 'Accenture plc', sector: 'Information Technology' }
+        ];
+    }
+
+    getSectorForSymbol(symbol) {
+        const sectorMap = {
+            'AAPL': 'Technology', 'GOOGL': 'Technology', 'MSFT': 'Technology',
+            'AMZN': 'Consumer Discretionary', 'TSLA': 'Consumer Discretionary',
+            'META': 'Technology', 'NVDA': 'Technology', 'JPM': 'Financials',
+            'JNJ': 'Healthcare', 'V': 'Financials', 'PG': 'Consumer Staples',
+            'HD': 'Consumer Discretionary', 'UNH': 'Healthcare', 'MA': 'Financials',
+            'BAC': 'Financials', 'DIS': 'Communication Services', 'ADBE': 'Technology',
+            'NFLX': 'Communication Services', 'CRM': 'Technology', 'ACN': 'Information Technology'
+        };
+        return sectorMap[symbol] || 'Other';
+    }
+
+    handleSearchInput(value) {
+        this.searchTerm = value;
+        this.elements.clearBtn.style.display = value.length > 0 ? 'flex' : 'none';
+        
+        if (value.length > 0 && !this.isOpen) {
+            this.openDropdown();
+        }
+        
+        this.filterDropdownOptions(value);
+    }
+
+    filterDropdownOptions(searchTerm) {
+        this.dropdownSearchTerm = searchTerm.toLowerCase();
+        
+        if (!searchTerm) {
+            this.filteredCompanies = [...this.companies];
+        } else {
+            this.filteredCompanies = this.companies.filter(company => 
+                company.name.toLowerCase().includes(this.dropdownSearchTerm) ||
+                company.symbol.toLowerCase().includes(this.dropdownSearchTerm) ||
+                company.sector.toLowerCase().includes(this.dropdownSearchTerm)
+            );
+        }
+        
+        this.renderDropdownOptions();
+    }
+
+    renderDropdownOptions() {
+        const content = this.elements.dropdownContent;
+        content.innerHTML = '';
+        
+        if (this.filteredCompanies.length === 0) {
+            content.innerHTML = '<div class="no-results">No companies found</div>';
+            return;
+        }
+        
+        this.filteredCompanies.forEach((company, index) => {
+            const option = document.createElement('div');
+            option.className = 'company-option';
+            option.setAttribute('role', 'option');
+            option.setAttribute('aria-selected', this.selectedCompanies.has(company.symbol));
+            option.setAttribute('tabindex', '0');
+            option.dataset.index = index;
+            option.dataset.symbol = company.symbol;
+            
+            option.innerHTML = `
+                <div class="company-checkbox"></div>
+                <div class="company-info">
+                    <div class="company-name">${company.name}</div>
+                    <div class="company-symbol">${company.symbol}</div>
+                    <div class="company-sector">${company.sector}</div>
+                </div>
+            `;
+            
+            option.addEventListener('click', () => {
+                this.toggleCompanySelection(company.symbol);
+            });
+            
+            option.addEventListener('keydown', (e) => {
+                this.handleOptionKeyboard(e, index);
+            });
+            
+            if (this.selectedCompanies.has(company.symbol)) {
+                option.classList.add('selected');
+            }
+            
+            content.appendChild(option);
+        });
+        
+        this.updateDropdownCount();
+    }
+
+    toggleCompanySelection(symbol) {
+        if (this.selectedCompanies.has(symbol)) {
+            this.selectedCompanies.delete(symbol);
+        } else {
+            this.selectedCompanies.add(symbol);
+        }
+        
+        this.updateOptionSelection(symbol);
+        this.updateApplyButton();
+    }
+
+    updateOptionSelection(symbol) {
+        const option = this.elements.dropdownContent.querySelector(`[data-symbol="${symbol}"]`);
+        if (option) {
+            const isSelected = this.selectedCompanies.has(symbol);
+            option.classList.toggle('selected', isSelected);
+            option.setAttribute('aria-selected', isSelected);
+        }
+    }
+
+    handleKeyboardNavigation(e) {
+        const options = this.elements.dropdownContent.querySelectorAll('.company-option');
+        
+        switch (e.key) {
+            case 'ArrowDown':
+                e.preventDefault();
+                this.keyboardIndex = Math.min(this.keyboardIndex + 1, options.length - 1);
+                this.updateKeyboardSelection(options);
+                break;
+            case 'ArrowUp':
+                e.preventDefault();
+                this.keyboardIndex = Math.max(this.keyboardIndex - 1, 0);
+                this.updateKeyboardSelection(options);
+                break;
+            case 'Enter':
+                e.preventDefault();
+                if (this.keyboardIndex >= 0 && options[this.keyboardIndex]) {
+                    options[this.keyboardIndex].click();
+                }
+                break;
+            case 'Escape':
+                this.closeDropdown();
+                break;
+        }
+    }
+
+    handleOptionKeyboard(e, index) {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            this.toggleCompanySelection(this.filteredCompanies[index].symbol);
+        }
+    }
+
+    updateKeyboardSelection(options) {
+        options.forEach((option, index) => {
+            option.classList.toggle('keyboard-selected', index === this.keyboardIndex);
+            if (index === this.keyboardIndex) {
+                option.focus();
+            }
+        });
+    }
+
+    openDropdown() {
+        this.isOpen = true;
+        this.elements.dropdown.classList.add('active');
+        this.elements.toggleBtn.classList.add('active');
+        this.elements.searchInput.setAttribute('aria-expanded', 'true');
+        this.elements.dropdownSearchInput.focus();
+        this.keyboardIndex = -1;
+    }
+
+    closeDropdown() {
+        this.isOpen = false;
+        this.elements.dropdown.classList.remove('active');
+        this.elements.toggleBtn.classList.remove('active');
+        this.elements.searchInput.setAttribute('aria-expanded', 'false');
+        this.keyboardIndex = -1;
+    }
+
+    toggleDropdown() {
+        if (this.isOpen) {
+            this.closeDropdown();
+        } else {
+            this.openDropdown();
+        }
+    }
+
+    clearSearch() {
+        this.elements.searchInput.value = '';
+        this.searchTerm = '';
+        this.elements.clearBtn.style.display = 'none';
+        this.filterDropdownOptions('');
+        this.applyFilter();
+    }
+
+    clearAllSelections() {
+        this.selectedCompanies.clear();
+        this.elements.dropdownContent.querySelectorAll('.company-option').forEach(option => {
+            option.classList.remove('selected');
+            option.setAttribute('aria-selected', 'false');
+        });
+        this.updateApplyButton();
+    }
+
+    updateDropdownCount() {
+        this.elements.dropdownCount.textContent = this.filteredCompanies.length;
+    }
+
+    updateApplyButton() {
+        const hasSelection = this.selectedCompanies.size > 0;
+        this.elements.applyBtn.style.opacity = hasSelection ? '1' : '0.6';
+        this.elements.applyBtn.style.cursor = hasSelection ? 'pointer' : 'not-allowed';
+    }
+
+    applyFilter() {
+        const selectedArray = Array.from(this.selectedCompanies);
+        
+        // Update main search input with selected companies
+        if (selectedArray.length > 0) {
+            this.elements.searchInput.value = selectedArray.join(', ');
+            this.elements.searchInput.placeholder = `${selectedArray.length} companies selected`;
+        } else {
+            this.elements.searchInput.value = '';
+            this.elements.searchInput.placeholder = 'Search company...';
+        }
+        
+        // Apply filter to dashboard
+        DashboardState.updateFilters({ companies: selectedArray });
+        
+        // Close dropdown
+        this.closeDropdown();
+        
+        console.log('Applied company filter:', selectedArray);
+    }
+
+    setLoading(loading) {
+        this.isLoading = loading;
+        this.elements.loading.style.display = loading ? 'flex' : 'none';
+        
+        if (loading) {
+            this.elements.dropdownContent.style.display = 'none';
+        } else {
+            this.elements.dropdownContent.style.display = 'block';
+        }
+    }
+}
+
+// Initialize the enhanced company filter
+const companyFilter = new CompanyFilter();
+
+// Make it globally accessible for integration
+window.CompanyFilter = CompanyFilter;
+window.companyFilter = companyFilter;
+</script>

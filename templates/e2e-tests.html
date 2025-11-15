@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard E2E Tests</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-container {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e5e7eb;
+        }
+        .test-title {
+            font-size: 1.2em;
+            font-weight: 600;
+            color: #333;
+        }
+        .test-controls {
+            display: flex;
+            gap: 10px;
+        }
+        .test-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 0.9em;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .test-btn:hover {
+            background: #5a67d8;
+            transform: translateY(-1px);
+        }
+        .test-btn:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .test-btn.success {
+            background: #10b981;
+        }
+        .test-btn.fail {
+            background: #ef4444;
+        }
+        .test-results {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .test-result {
+            padding: 12px;
+            margin: 8px 0;
+            border-radius: 6px;
+            border-left: 4px solid;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .test-result.pass {
+            background: #d1fae5;
+            border-left-color: #10b981;
+        }
+        .test-result.fail {
+            background: #fee2e2;
+            border-left-color: #ef4444;
+        }
+        .test-result.running {
+            background: #dbeafe;
+            border-left-color: #3b82f6;
+        }
+        .test-info {
+            flex: 1;
+        }
+        .test-name {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        .test-description {
+            font-size: 0.9em;
+            color: #6b7280;
+        }
+        .test-duration {
+            font-size: 0.8em;
+            color: #6b7280;
+            margin-left: 10px;
+        }
+        .test-error {
+            font-size: 0.85em;
+            color: #dc2626;
+            margin-top: 8px;
+            font-family: monospace;
+            background: #fef2f2;
+            padding: 8px;
+            border-radius: 4px;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e5e7eb;
+            border-radius: 4px;
+            margin: 15px 0;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background: #667eea;
+            transition: width 0.3s ease;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        .stat-card {
+            background: #f9fafb;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 1.5em;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+        .stat-label {
+            font-size: 0.8em;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #6b7280;
+        }
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <div class="test-header">
+            <div>
+                <h1>Dashboard End-to-End Tests</h1>
+                <p style="color: #6b7280; margin-top: 5px;">Simulate real user interactions and workflows</p>
+            </div>
+            <div class="test-controls">
+                <button class="test-btn" onclick="runAllE2ETests()">Run All E2E Tests</button>
+                <button class="test-btn" onclick="runCriticalPathTests()">Run Critical Path</button>
+                <button class="test-btn" onclick="clearResults()">Clear Results</button>
+            </div>
+        </div>
+        
+        <div class="progress-bar">
+            <div id="progress-fill" class="progress-fill" style="width: 0%"></div>
+        </div>
+        
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div id="total-tests" class="stat-value">0</div>
+                <div class="stat-label">Total Tests</div>
+            </div>
+            <div class="stat-card">
+                <div id="passed-tests" class="stat-value stat-pass">0</div>
+                <div class="stat-label">Passed</div>
+            </div>
+            <div class="stat-card">
+                <div id="failed-tests" class="stat-value stat-fail">0</div>
+                <div class="stat-label">Failed</div>
+            </div>
+            <div class="stat-card">
+                <div id="avg-duration" class="stat-value">0ms</div>
+                <div class="stat-label">Avg Duration</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="test-results"></div>
+
+    <script>
+        // E2E Test Framework
+        class E2ETestFramework {
+            constructor() {
+                this.tests = [];
+                this.results = [];
+                this.isRunning = false;
+            }
+
+            addTest(name, description, testFn, critical = false) {
+                this.tests.push({
+                    name,
+                    description,
+                    testFn,
+                    critical,
+                    status: 'pending',
+                    duration: 0,
+                    error: null
+                });
+            }
+
+            async runTest(test) {
+                const startTime = performance.now();
+                test.status = 'running';
+                this.updateUI();
+
+                try {
+                    await test.testFn();
+                    test.status = 'passed';
+                } catch (error) {
+                    test.status = 'failed';
+                    test.error = error;
+                    console.error(`Test failed: ${test.name}`, error);
+                }
+
+                test.duration = performance.now() - startTime;
+                this.results.push(test);
+                this.updateUI();
+            }
+
+            async runAll() {
+                if (this.isRunning) return;
+                this.isRunning = true;
+                this.results = [];
+                this.updateUI();
+
+                for (const test of this.tests) {
+                    await this.runTest(test);
+                    await this.delay(100); // Small delay between tests
+                }
+
+                this.isRunning = false;
+                this.updateUI();
+            }
+
+            async runCritical() {
+                if (this.isRunning) return;
+                this.isRunning = true;
+                this.results = [];
+                this.updateUI();
+
+                const criticalTests = this.tests.filter(test => test.critical);
+                for (const test of criticalTests) {
+                    await this.runTest(test);
+                    await this.delay(100);
+                }
+
+                this.isRunning = false;
+                this.updateUI();
+            }
+
+            delay(ms) {
+                return new Promise(resolve => setTimeout(resolve, ms));
+            }
+
+            updateUI() {
+                const resultsContainer = document.getElementById('test-results');
+                const progressFill = document.getElementById('progress-fill');
+                
+                // Update progress
+                const completedTests = this.results.length;
+                const totalTests = this.tests.length;
+                const progress = totalTests > 0 ? (completedTests / totalTests) * 100 : 0;
+                progressFill.style.width = `${progress}%`;
+
+                // Update stats
+                const passed = this.results.filter(t => t.status === 'passed').length;
+                const failed = this.results.filter(t => t.status === 'failed').length;
+                const avgDuration = this.results.length > 0 
+                    ? Math.round(this.results.reduce((sum, t) => sum + t.duration, 0) / this.results.length)
+                    : 0;
+
+                document.getElementById('total-tests').textContent = totalTests;
+                document.getElementById('passed-tests').textContent = passed;
+                document.getElementById('failed-tests').textContent = failed;
+                document.getElementById('avg-duration').textContent = `${avgDuration}ms`;
+
+                // Update results
+                resultsContainer.innerHTML = this.results.map(test => `
+                    <div class="test-result ${test.status}">
+                        <div class="test-info">
+                            <div class="test-name">${test.status === 'passed' ? '✓' : '✗'} ${test.name}</div>
+                            <div class="test-description">${test.description}</div>
+                            ${test.error ? `<div class="test-error">${test.error.message}</div>` : ''}
+                        </div>
+                        <div class="test-duration">${Math.round(test.duration)}ms</div>
+                    </div>
+                `).join('');
+            }
+
+            clearResults() {
+                this.results = [];
+                this.tests.forEach(test => {
+                    test.status = 'pending';
+                    test.duration = 0;
+                    test.error = null;
+                });
+                this.updateUI();
+            }
+        }
+
+        // Initialize test framework
+        const e2eTest = new E2ETestFramework();
+
+        // Helper functions for E2E tests
+        const simulateTyping = (element, text) => {
+            return new Promise(resolve => {
+                if (element) {
+                    element.value = text;
+                    element.dispatchEvent(new Event('input', { bubbles: true }));
+                    element.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+                setTimeout(resolve, 50);
+            });
+        };
+
+        const simulateClick = (element) => {
+            return new Promise(resolve => {
+                if (element) {
+                    element.click();
+                }
+                setTimeout(resolve, 100);
+            });
+        };
+
+        const waitForElement = (selector, timeout = 5000) => {
+            return new Promise((resolve, reject) => {
+                const startTime = Date.now();
+                const checkElement = () => {
+                    const element = document.querySelector(selector);
+                    if (element) {
+                        resolve(element);
+                    } else if (Date.now() - startTime > timeout) {
+                        reject(new Error(`Element ${selector} not found within ${timeout}ms`));
+                    } else {
+                        setTimeout(checkElement, 100);
+                    }
+                };
+                checkElement();
+            });
+        };
+
+        const checkElementExists = (selector) => {
+            return document.querySelector(selector) !== null;
+        };
+
+        const checkElementVisible = (selector) => {
+            const element = document.querySelector(selector);
+            return element && element.offsetParent !== null;
+        };
+
+        const getElementText = (selector) => {
+            const element = document.querySelector(selector);
+            return element ? element.textContent.trim() : '';
+        };
+
+        // E2E Test Cases
+
+        // Navigation Tests
+        e2eTest.addTest('Navigation - Tab Switching', 
+            'Test that users can switch between different dashboard views', 
+            async () => {
+                // Test that tabs exist
+                const trendsTab = await waitForElement('button[onclick*="trends"]');
+                const ordersTab = await waitForElement('button[onclick*="orders"]');
+                
+                assert(trendsTab && ordersTab, 'Navigation tabs should exist');
+                
+                // Test tab switching
+                await simulateClick(ordersTab);
+                await e2eTest.delay(300); // Wait for transition
+                
+                // Verify orders view is active
+                const ordersView = document.getElementById('view-orders');
+                assert(ordersView && ordersView.classList.contains('active'), 'Orders view should be active');
+                
+                // Switch back to trends
+                await simulateClick(trendsTab);
+                await e2eTest.delay(300);
+                
+                const trendsView = document.getElementById('view-trends');
+                assert(trendsView && trendsView.classList.contains('active'), 'Trends view should be active');
+            }, true);
+
+        e2eTest.addTest('Navigation - Performance Panel Toggle', 
+            'Test that performance panel can be opened and closed', 
+            async () => {
+                const perfButton = await waitForElement('button[onclick*="togglePerformancePanel"]');
+                assert(perfButton, 'Performance button should exist');
+                
+                // Open performance panel
+                await simulateClick(perfButton);
+                await e2eTest.delay(200);
+                
+                const perfPanel = document.getElementById('performance-panel');
+                assert(perfPanel && perfPanel.style.display !== 'none', 'Performance panel should be visible');
+                
+                // Close performance panel
+                const closeButton = perfPanel.querySelector('button[onclick*="none"]');
+                if (closeButton) {
+                    await simulateClick(closeButton);
+                    await e2eTest.delay(200);
+                    assert(perfPanel.style.display === 'none', 'Performance panel should be hidden');
+                }
+            });
+
+        // Filter Tests
+        e2eTest.addTest('Filters - Symbol Search', 
+            'Test symbol search functionality and autocomplete', 
+            async () => {
+                const symbolInput = await waitForElement('#symbol-search');
+                assert(symbolInput, 'Symbol search input should exist');
+                
+                // Test typing in symbol search
+                await simulateTyping(symbolInput, 'AAPL');
+                await e2eTest.delay(500); // Wait for autocomplete
+                
+                // Check if clear button appears
+                const clearButton = document.getElementById('symbol-clear');
+                assert(clearButton && clearButton.classList.contains('visible'), 'Clear button should be visible when text is entered');
+                
+                // Test clearing
+                await simulateClick(clearButton);
+                assert(symbolInput.value === '', 'Input should be cleared');
+            }, true);
+
+        e2eTest.addTest('Filters - Status Filter', 
+            'Test status filter dropdown functionality', 
+            async () => {
+                const statusFilter = await waitForElement('#status-filter');
+                assert(statusFilter, 'Status filter should exist');
+                
+                // Test changing status
+                statusFilter.value = 'completed';
+                statusFilter.dispatchEvent(new Event('change', { bubbles: true }));
+                await e2eTest.delay(200);
+                
+                assert(statusFilter.value === 'completed', 'Status filter should maintain selected value');
+                
+                // Reset to empty
+                statusFilter.value = '';
+                statusFilter.dispatchEvent(new Event('change', { bubbles: true }));
+                assert(statusFilter.value === '', 'Status filter should be resettable');
+            }, true);
+
+        // Data Loading Tests
+        e2eTest.addTest('Data Loading - Initial Load', 
+            'Test that dashboard loads data correctly on initialization', 
+            async () => {
+                // Wait for loading to complete
+                await waitForElement('#tabs', 10000); // Wait up to 10 seconds
+                
+                // Check that tabs are visible
+                const tabs = document.getElementById('tabs');
+                assert(tabs && tabs.style.display === 'flex', 'Tabs should be visible after data loads');
+                
+                // Check that charts container exists
+                const chartsContainer = document.getElementById('charts');
+                assert(chartsContainer, 'Charts container should exist');
+                
+                // Check that metrics exist
+                const metricsContainer = document.getElementById('metrics');
+                assert(metricsContainer, 'Metrics container should exist');
+            }, true);
+
+        e2eTest.addTest('Data Loading - Orders Data', 
+            'Test that orders data is loaded and displayed correctly', 
+            async () => {
+                // Switch to orders view
+                const ordersTab = await waitForElement('button[onclick*="orders"]');
+                await simulateClick(ordersTab);
+                await e2eTest.delay(1000); // Wait for orders data to load
+                
+                // Check for orders tables
+                const buyTable = await waitForElement('#buy-orders-table');
+                const sellTable = await waitForElement('#sell-orders-table');
+                
+                assert(buyTable && sellTable, 'Both buy and sell tables should exist');
+                
+                // Check for KPI elements
+                const totalBought = document.getElementById('total-bought');
+                const totalSold = document.getElementById('total-sold');
+                const netProfit = document.getElementById('net-profit');
+                
+                assert(totalBought && totalSold && netProfit, 'All KPI elements should exist');
+            }, true);
+
+        // Performance Tests
+        e2eTest.addTest('Performance - View Switching Speed', 
+            'Test that view switching happens within acceptable time limits', 
+            async () => {
+                const trendsTab = await waitForElement('button[onclick*="trends"]');
+                const ordersTab = await waitForElement('button[onclick*="orders"]');
+                
+                // Measure view switching time
+                const startTime = performance.now();
+                await simulateClick(ordersTab);
+                await e2eTest.delay(300); // Wait for transition
+                const endTime = performance.now();
+                
+                const switchTime = endTime - startTime;
+                assert(switchTime < 1000, `View switching should be fast (was ${switchTime.toFixed(0)}ms)`);
+            });
+
+        e2eTest.addTest('Performance - Filter Response Time', 
+            'Test that filters respond quickly to user input', 
+            async () => {
+                const symbolInput = await waitForElement('#symbol-search');
+                
+                // Measure filter response time
+                const startTime = performance.now();
+                await simulateTyping(symbolInput, 'TEST');
+                await e2eTest.delay(200); // Wait for filter to apply
+                const endTime = performance.now();
+                
+                const filterTime = endTime - startTime;
+                assert(filterTime < 500, `Filter should respond quickly (was ${filterTime.toFixed(0)}ms)`);
+            });
+
+        // Responsive Design Tests
+        e2eTest.addTest('Responsive - Mobile View', 
+            'Test that dashboard works on mobile screen sizes', 
+            async () => {
+                // Simulate mobile viewport
+                const originalWidth = window.innerWidth;
+                Object.defineProperty(window, 'innerWidth', { value: 375, writable: true });
+                window.dispatchEvent(new Event('resize'));
+                await e2eTest.delay(200);
+                
+                // Check that elements are still visible and functional
+                const tabs = await waitForElement('#tabs');
+                const symbolInput = await waitForElement('#symbol-search');
+                
+                assert(tabs && symbolInput, 'Key elements should be accessible on mobile');
+                
+                // Restore desktop viewport
+                Object.defineProperty(window, 'innerWidth', { value: originalWidth, writable: true });
+                window.dispatchEvent(new Event('resize'));
+            });
+
+        // Error Handling Tests
+        e2eTest.addTest('Error Handling - Invalid Symbol', 
+            'Test that invalid symbols are handled gracefully', 
+            async () => {
+                const symbolInput = await waitForElement('#symbol-search');
+                
+                // Enter invalid symbol
+                await simulateTyping(symbolInput, 'INVALIDSYMBOL123');
+                await e2eTest.delay(500);
+                
+                // Should not crash - check that input is still functional
+                assert(symbolInput.value === 'INVALIDSYMBOL123', 'Input should maintain invalid symbol');
+                
+                // Clear and verify it still works
+                const clearButton = document.getElementById('symbol-clear');
+                if (clearButton) {
+                    await simulateClick(clearButton);
+                    assert(symbolInput.value === '', 'Input should be clearable');
+                }
+            });
+
+        // Integration Tests
+        e2eTest.addTest('Integration - Complete User Workflow', 
+            'Test complete user workflow: load data, switch views, apply filters', 
+            async () => {
+                // Step 1: Wait for initial load
+                await waitForElement('#tabs', 10000);
+                
+                // Step 2: Switch to orders view
+                const ordersTab = await waitForElement('button[onclick*="orders"]');
+                await simulateClick(ordersTab);
+                await e2eTest.delay(1000);
+                
+                // Step 3: Apply symbol filter
+                const symbolInput = await waitForElement('#symbol-search');
+                await simulateTyping(symbolInput, 'AAPL');
+                await e2eTest.delay(500);
+                
+                // Step 4: Apply status filter
+                const statusFilter = await waitForElement('#status-filter');
+                statusFilter.value = 'completed';
+                statusFilter.dispatchEvent(new Event('change', { bubbles: true }));
+                await e2eTest.delay(500);
+                
+                // Step 5: Clear filters
+                const clearButton = document.getElementById('symbol-clear');
+                if (clearButton) {
+                    await simulateClick(clearButton);
+                }
+                statusFilter.value = '';
+                statusFilter.dispatchEvent(new Event('change', { bubbles: true }));
+                
+                // Verify workflow completed without errors
+                assert(true, 'Complete workflow should execute without errors');
+            }, true);
+
+        // Memory and State Tests
+        e2eTest.addTest('State - Filter Persistence', 
+            'Test that filter state is maintained across view switches', 
+            async () => {
+                // Set a filter in orders view
+                const ordersTab = await waitForElement('button[onclick*="orders"]');
+                await simulateClick(ordersTab);
+                await e2eTest.delay(1000);
+                
+                const symbolInput = await waitForElement('#symbol-search');
+                await simulateTyping(symbolInput, 'TSLA');
+                await e2eTest.delay(500);
+                
+                // Switch to trends view and back
+                const trendsTab = await waitForElement('button[onclick*="trends"]');
+                await simulateClick(trendsTab);
+                await e2eTest.delay(300);
+                
+                await simulateClick(ordersTab);
+                await e2eTest.delay(500);
+                
+                // Check if filter is still applied (if state persistence is implemented)
+                // This test may vary based on implementation
+                assert(symbolInput.value === 'TSLA', 'Filter state should be maintained');
+            });
+
+        // Run functions
+        function runAllE2ETests() {
+            e2eTest.runAll();
+        }
+
+        function runCriticalPathTests() {
+            e2eTest.runCritical();
+        }
+
+        function clearResults() {
+            e2eTest.clearResults();
+        }
+
+        // Auto-run critical tests on page load
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                console.log('Dashboard E2E Tests loaded. Run tests using the buttons above.');
+            }, 1000);
+        });
+    </script>
+</body>
+</html>

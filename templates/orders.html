@@ -51,6 +51,19 @@
             text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
         }
 
+        .back-btn {
+            color: white;
+            text-decoration: none;
+            font-size: 1.1em;
+            margin-bottom: 20px;
+            display: inline-block;
+            transition: transform 0.3s ease;
+        }
+
+        .back-btn:hover {
+            transform: translateX(-5px);
+        }
+
         .loading {
             text-align: center;
             color: white;
@@ -67,61 +80,61 @@
             text-align: center;
         }
 
-        /* Filter Section */
+        /* Filter Section - Compact Design */
         .filters-section {
             background: var(--white);
             border-radius: 15px;
-            padding: 25px;
+            padding: 20px 24px;
             margin-bottom: 30px;
             box-shadow: var(--shadow-lg);
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
         }
 
         .filters-title {
-            font-size: 1.3em;
+            font-size: 1.1em;
             font-weight: 600;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
             color: var(--gray-800);
         }
 
         .filters-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
             align-items: end;
         }
 
         .filter-group {
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 6px;
         }
 
         .filter-label {
             color: var(--gray-600);
-            font-size: 0.9em;
+            font-size: 0.8em;
             font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
 
         .filter-input {
-            padding: 12px 15px;
+            padding: 10px 12px;
             border-radius: 12px;
             border: 2px solid var(--gray-300);
-            font-size: 1em;
+            font-size: 0.95em;
             background: var(--white);
             color: var(--gray-800);
             transition: all 0.3s ease;
+            height: 42px;
         }
 
         .filter-input:focus {
             outline: none;
             border-color: var(--primary);
             box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-        }
-
-        .filter-select {
-            cursor: pointer;
         }
 
         .autocomplete-container {
@@ -158,56 +171,44 @@
             color: white;
         }
 
-        .date-range-container {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-        }
-
-        .date-input {
-            flex: 1;
-        }
-
-        .date-presets {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-            margin-top: 10px;
-        }
-
-        .preset-btn {
-            background: var(--gray-200);
+        /* X icon for clearing instead of text button */
+        .clear-btn {
+            background: transparent;
             border: none;
-            padding: 8px 12px;
-            border-radius: 8px;
-            font-size: 0.85em;
+            color: #9ca3af;
+            padding: 4px 8px;
+            border-radius: 50%;
             cursor: pointer;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
             transition: all 0.3s ease;
         }
 
-        .preset-btn:hover {
-            background: var(--primary);
-            color: white;
-        }
-
-        .preset-btn.active {
-            background: var(--primary);
-            color: white;
+        .clear-btn:hover {
+            background: #f3f4f6;
+            color: #6b7280;
         }
 
         .filter-actions {
             display: flex;
             gap: 10px;
-            margin-top: 20px;
+            margin-top: 15px;
         }
 
         .btn {
             background: var(--primary);
             color: white;
             border: none;
-            padding: 12px 24px;
+            padding: 10px 20px;
             border-radius: 12px;
-            font-size: 0.95em;
+            font-size: 0.9em;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s ease;
@@ -230,7 +231,7 @@
             background: var(--gray-400);
         }
 
-        /* KPI Dashboard */
+        /* KPI Dashboard with Tooltips */
         .kpi-section {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -245,6 +246,7 @@
             box-shadow: var(--shadow);
             text-align: center;
             transition: transform 0.3s ease;
+            position: relative;
         }
 
         .kpi-card:hover {
@@ -259,6 +261,31 @@
             font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 0.5px;
+            position: relative;
+            cursor: help;
+        }
+
+        .kpi-label::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--gray-800);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 0.8em;
+            white-space: nowrap;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .kpi-label:hover::after {
+            opacity: 1;
+            visibility: visible;
         }
 
         .kpi-value {
@@ -273,46 +300,6 @@
 
         .kpi-value.negative {
             color: var(--danger);
-        }
-
-        .kpi-trend {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 5px;
-            font-size: 0.85em;
-            font-weight: 500;
-        }
-
-        .kpi-trend.positive {
-            color: var(--success);
-        }
-
-        .kpi-trend.negative {
-            color: var(--danger);
-        }
-
-        .kpi-sub-metrics {
-            display: flex;
-            justify-content: space-around;
-            margin-top: 15px;
-            padding-top: 15px;
-            border-top: 1px solid var(--gray-200);
-        }
-
-        .sub-metric {
-            text-align: center;
-        }
-
-        .sub-metric-label {
-            font-size: 0.8em;
-            color: var(--gray-600);
-            margin-bottom: 5px;
-        }
-
-        .sub-metric-value {
-            font-size: 1.1em;
-            font-weight: 600;
         }
 
         /* Tables Section */
@@ -331,13 +318,10 @@
         }
 
         .table-title {
-            font-size: 1.3em;
-            font-weight: 600;
-            margin-bottom: 20px;
-            color: var(--gray-800);
             display: flex;
             justify-content: space-between;
             align-items: center;
+            margin-bottom: 20px;
         }
 
         .table-count {
@@ -345,20 +329,20 @@
             color: white;
             padding: 4px 12px;
             border-radius: 20px;
-            font-size: 0.8em;
+            font-size: 0.9em;
             font-weight: 600;
         }
 
         .table-wrapper {
             overflow-x: auto;
-            border-radius: 10px;
+            border-radius: 8px;
             border: 1px solid var(--gray-200);
         }
 
         table {
             width: 100%;
             border-collapse: collapse;
-            background: var(--white);
+            background: white;
         }
 
         th {
@@ -370,33 +354,15 @@
             border-bottom: 2px solid var(--gray-300);
             cursor: pointer;
             user-select: none;
-            transition: background-color 0.2s;
         }
 
         th:hover {
             background: var(--gray-200);
         }
 
-        th.sortable::after {
-            content: ' ⇅';
-            color: var(--gray-400);
-            font-size: 0.8em;
-        }
-
-        th.sort-asc::after {
-            content: ' ↑';
-            color: var(--primary);
-        }
-
-        th.sort-desc::after {
-            content: ' ↓';
-            color: var(--primary);
-        }
-
         td {
             padding: 12px;
             border-bottom: 1px solid var(--gray-200);
-            transition: background-color 0.2s;
         }
 
         tr:hover {
@@ -436,94 +402,6 @@
             color: var(--success);
         }
 
-        .action-btn {
-            background: var(--primary);
-            color: white;
-            border: none;
-            padding: 6px 12px;
-            border-radius: 6px;
-            font-size: 0.8em;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            margin-right: 4px;
-        }
-
-        .action-btn:hover {
-            background: var(--primary-dark);
-            transform: translateY(-1px);
-        }
-
-        .action-btn.secondary {
-            background: var(--gray-300);
-            color: var(--gray-800);
-        }
-
-        .action-btn.secondary:hover {
-            background: var(--gray-400);
-        }
-
-        /* Pagination */
-        .pagination {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 10px;
-            margin-top: 20px;
-        }
-
-        .page-btn {
-            background: var(--white);
-            border: 1px solid var(--gray-300);
-            padding: 8px 12px;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            font-size: 0.9em;
-        }
-
-        .page-btn:hover {
-            background: var(--gray-100);
-        }
-
-        .page-btn.active {
-            background: var(--primary);
-            color: white;
-            border-color: var(--primary);
-        }
-
-        .page-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        .page-info {
-            color: var(--gray-600);
-            font-size: 0.9em;
-        }
-
-        /* Skeleton Loading */
-        .skeleton {
-            background: linear-gradient(90deg, var(--gray-200) 25%, var(--gray-300) 50%, var(--gray-200) 75%);
-            background-size: 200% 100%;
-            animation: skeleton-loading 1.5s infinite;
-            border-radius: 4px;
-        }
-
-        @keyframes skeleton-loading {
-            0% { background-position: 200% 0; }
-            100% { background-position: -200% 0; }
-        }
-
-        .skeleton-row {
-            height: 60px;
-            margin-bottom: 8px;
-        }
-
-        .skeleton-cell {
-            height: 20px;
-            margin: 8px;
-        }
-
         /* Responsive Design */
         @media (max-width: 768px) {
             .tables-section {
@@ -536,10 +414,6 @@
 
             .kpi-section {
                 grid-template-columns: 1fr;
-            }
-
-            .date-range-container {
-                flex-direction: column;
             }
 
             .filter-actions {
@@ -587,142 +461,6 @@
             .kpi-value {
                 font-size: 1.8em;
             }
-
-            .action-btn {
-                padding: 4px 8px;
-                font-size: 0.7em;
-            }
-        }
-
-        /* Loading States */
-        .loading-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(255, 255, 255, 0.8);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-            border-radius: 10px;
-        }
-
-        .spinner {
-            width: 40px;
-            height: 40px;
-            border: 4px solid var(--gray-200);
-            border-top: 4px solid var(--primary);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .table-container {
-            position: relative;
-        }
-
-        /* Status Indicator */
-        .status-indicator {
-            display: inline-block;
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            margin-right: 6px;
-        }
-
-        .status-indicator.completed {
-            background: var(--success);
-        }
-
-        .status-indicator.pending {
-            background: var(--warning);
-        }
-
-        .status-indicator.cancelled {
-            background: var(--danger);
-        }
-
-        .status-indicator.filled {
-            background: var(--success);
-        }
-
-        /* Tooltip */
-        .tooltip {
-            position: relative;
-            cursor: help;
-        }
-
-        .tooltip::after {
-            content: attr(data-tooltip);
-            position: absolute;
-            bottom: 100%;
-            left: 50%;
-            transform: translateX(-50%);
-            background: var(--gray-800);
-            color: white;
-            padding: 6px 10px;
-            border-radius: 4px;
-            font-size: 0.8em;
-            white-space: nowrap;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.3s;
-            z-index: 1000;
-        }
-
-        .tooltip:hover::after {
-            opacity: 1;
-        }
-
-        /* Empty State */
-        .empty-state {
-            text-align: center;
-            padding: 60px 20px;
-            color: var(--gray-600);
-        }
-
-        .empty-state-icon {
-            font-size: 4em;
-            margin-bottom: 20px;
-            opacity: 0.5;
-        }
-
-        .empty-state-title {
-            font-size: 1.3em;
-            font-weight: 600;
-            margin-bottom: 10px;
-        }
-
-        .empty-state-text {
-            font-size: 1em;
-            line-height: 1.5;
-        }
-
-        /* Back Button */
-        .back-btn {
-            background: rgba(255, 255, 255, 0.2);
-            color: white;
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            padding: 10px 20px;
-            border-radius: 25px;
-            font-size: 0.9em;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            margin-bottom: 20px;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .back-btn:hover {
-            background: rgba(255, 255, 255, 0.3);
-            transform: translateY(-2px);
         }
     </style>
 </head>
@@ -734,19 +472,20 @@
         <div id="loading" class="loading">Loading orders data...</div>
         <div id="error" class="error" style="display: none;"></div>
 
-        <!-- Filter Section -->
+        <!-- Filter Section - Compact Design -->
         <div id="filters-section" class="filters-section" style="display: none;">
-            <div class="filters-title">Advanced Filters</div>
+            <div class="filters-title">Filters</div>
             <div class="filters-grid">
                 <div class="filter-group">
                     <label class="filter-label">Stock Symbol</label>
                     <div class="autocomplete-container">
                         <input type="text" id="symbol-filter" class="filter-input" placeholder="Type to search symbols...">
+                        <button id="symbol-clear" class="clear-btn" type="button" aria-label="Clear search">✕</button>
                         <div id="symbol-autocomplete" class="autocomplete-list"></div>
                     </div>
                 </div>
                 <div class="filter-group">
-                    <label class="filter-label">Order Status</label>
+                    <label class="filter-label">Status</label>
                     <select id="status-filter" class="filter-input filter-select">
                         <option value="">All Statuses</option>
                         <option value="filled">Filled</option>
@@ -754,58 +493,26 @@
                         <option value="cancelled">Cancelled</option>
                     </select>
                 </div>
-                <div class="filter-group">
-                    <label class="filter-label">Date Range</label>
-                    <div class="date-range-container">
-                        <input type="text" id="date-start" class="filter-input date-input" placeholder="Start date">
-                        <input type="text" id="date-end" class="filter-input date-input" placeholder="End date">
-                    </div>
-                    <div class="date-presets">
-                        <button class="preset-btn" data-preset="today">Today</button>
-                        <button class="preset-btn" data-preset="week">This Week</button>
-                        <button class="preset-btn" data-preset="month">This Month</button>
-                        <button class="preset-btn" data-preset="quarter">Last Quarter</button>
-                    </div>
-                    
-                </div>
-            </div>
-            <div class="filter-actions">
-                <button id="apply-filters" class="btn">Apply Filters</button>
-                <button id="clear-filters" class="btn btn-secondary">Clear All</button>
             </div>
         </div>
 
-        <!-- KPI Dashboard -->
+        <!-- KPI Dashboard with Tooltips -->
         <div id="kpi-section" class="kpi-section" style="display: none;">
             <div class="kpi-card">
-                <div class="kpi-label">Total Bought Value</div>
+                <div class="kpi-label" data-tooltip="Total value of all buy orders">Total Bought Value</div>
                 <div id="buy-total" class="kpi-value">$0.00</div>
-                <div class="kpi-trend">
-                    <span id="buy-trend-icon">→</span>
-                    <span id="buy-trend-text">0% vs previous</span>
-                </div>
             </div>
             <div class="kpi-card">
-                <div class="kpi-label">Sell Total & Open Positions</div>
+                <div class="kpi-label" data-tooltip="Total value of all sell orders">Total Sold Value</div>
                 <div id="sell-total" class="kpi-value">$0.00</div>
-                <div class="kpi-sub-metrics">
-                    <div class="sub-metric">
-                        <div class="sub-metric-label">Sell Total</div>
-                        <div id="sell-subtotal" class="sub-metric-value">$0.00</div>
-                    </div>
-                    <div class="sub-metric">
-                        <div class="sub-metric-label">Open Positions</div>
-                        <div id="positions-value" class="sub-metric-value">$0.00</div>
-                    </div>
-                </div>
             </div>
             <div class="kpi-card">
-                <div class="kpi-label">Net Profit</div>
+                <div class="kpi-label" data-tooltip="Net profit from all orders">Net Profit</div>
                 <div id="profit-total" class="kpi-value">$0.00</div>
-                <div class="kpi-trend">
-                    <span id="profit-trend-icon">→</span>
-                    <span id="profit-trend-text">0% vs previous</span>
-                </div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-label" data-tooltip="Total number of orders">Orders Count</div>
+                <div id="orders-count" class="kpi-value">0</div>
             </div>
         </div>
 
@@ -817,33 +524,22 @@
                     <span id="buy-count" class="table-count">0</span>
                 </div>
                 <div class="table-wrapper">
-                    <div id="buy-loading" class="loading-overlay" style="display: none;">
-                        <div class="spinner"></div>
-                    </div>
                     <table id="buy-orders-table">
                         <thead>
                             <tr>
-                                <th data-sort="symbol" class="sortable">Symbol</th>
-                                <th data-sort="customer">Customer</th>
-                                <th data-sort="quantity">Quantity</th>
-                                <th data-sort="price">Price</th>
-                                <th data-sort="date">Date</th>
-                                <th data-sort="status">Status</th>
-                                <th>Actions</th>
+                                <th>Symbol</th>
+                                <th>Stock Name</th>
+                                <th>Quantity</th>
+                                <th>Price</th>
+                                <th>Total</th>
+                                <th>Date</th>
                             </tr>
                         </thead>
                         <tbody id="buy-orders-body">
-                            <tr>
-                                <td colspan="7" class="empty-state">
-                                    <div class="empty-state-icon">📊</div>
-                                    <div class="empty-state-title">No Buy Orders</div>
-                                    <div class="empty-state-text">No buy orders match your current filters</div>
-                                </td>
-                            </tr>
+                            <tr><td colspan="6" style="text-align: center; padding: 20px;">No buy orders found</td></tr>
                         </tbody>
                     </table>
                 </div>
-                <div class="pagination" id="buy-pagination"></div>
             </div>
 
             <div class="table-container">
@@ -852,33 +548,22 @@
                     <span id="sell-count" class="table-count">0</span>
                 </div>
                 <div class="table-wrapper">
-                    <div id="sell-loading" class="loading-overlay" style="display: none;">
-                        <div class="spinner"></div>
-                    </div>
                     <table id="sell-orders-table">
                         <thead>
                             <tr>
-                                <th data-sort="symbol" class="sortable">Symbol</th>
-                                <th data-sort="customer">Customer</th>
-                                <th data-sort="quantity">Quantity</th>
-                                <th data-sort="price">Price</th>
-                                <th data-sort="date">Date</th>
-                                <th data-sort="status">Status</th>
-                                <th>Actions</th>
+                                <th>Symbol</th>
+                                <th>Stock Name</th>
+                                <th>Quantity</th>
+                                <th>Price</th>
+                                <th>Total</th>
+                                <th>Date</th>
                             </tr>
                         </thead>
                         <tbody id="sell-orders-body">
-                            <tr>
-                                <td colspan="7" class="empty-state">
-                                    <div class="empty-state-icon">📈</div>
-                                    <div class="empty-state-title">No Sell Orders</div>
-                                    <div class="empty-state-text">No sell orders match your current filters</div>
-                                </td>
-                            </tr>
+                            <tr><td colspan="6" style="text-align: center; padding: 20px;">No sell orders found</td></tr>
                         </tbody>
                     </table>
                 </div>
-                <div class="pagination" id="sell-pagination"></div>
             </div>
         </div>
     </div>
@@ -889,13 +574,9 @@
         let filteredData = { buy: [], sell: [] };
         let currentPage = { buy: 1, sell: 1 };
         const perPage = 50;
-        let sortColumn = { buy: null, sell: null };
-        let sortDirection = { buy: 'asc', sell: 'asc' };
         let currentFilters = {
             symbol: '',
-            status: '',
-            startDate: '',
-            endDate: ''
+            status: ''
         };
 
         // Utility functions
@@ -916,41 +597,14 @@
             if (!dateStr) return 'N/A';
             try {
                 const date = new Date(dateStr);
-                return date.toLocaleDateString('en-US', {
-                    year: 'numeric',
-                    month: 'short',
-                    day: 'numeric'
+                return date.toLocaleDateString('en-US', { 
+                    year: 'numeric', 
+                    month: 'short', 
+                    day: 'numeric' 
                 });
             } catch {
-                return dateStr;
+                return 'N/A';
             }
-        }
-
-        function getStatusClass(status) {
-            const statusLower = status.toLowerCase();
-            if (statusLower.includes('filled') || statusLower.includes('completed')) return 'status-filled';
-            if (statusLower.includes('pending')) return 'status-pending';
-            if (statusLower.includes('cancelled')) return 'status-cancelled';
-            return 'status-filled';
-        }
-
-        function showLoading(section) {
-            document.getElementById(`${section}-loading`).style.display = 'flex';
-        }
-
-        function hideLoading(section) {
-            document.getElementById(`${section}-loading`).style.display = 'none';
-        }
-
-        function showError(message) {
-            const errorEl = document.getElementById('error');
-            errorEl.textContent = message;
-            errorEl.style.display = 'block';
-            document.getElementById('loading').style.display = 'none';
-        }
-
-        function hideError() {
-            document.getElementById('error').style.display = 'none';
         }
 
         // API functions
@@ -959,8 +613,6 @@
                 const params = new URLSearchParams();
                 if (currentFilters.symbol) params.append('symbol', currentFilters.symbol);
                 if (currentFilters.status) params.append('status', currentFilters.status);
-                if (currentFilters.startDate) params.append('start', currentFilters.startDate);
-                if (currentFilters.endDate) params.append('end', currentFilters.endDate);
                 
                 const response = await fetch(`/api/orders?${params}`);
                 if (!response.ok) throw new Error('Failed to fetch orders');
@@ -986,418 +638,190 @@
             }
         }
 
-        async function fetchStatuses() {
-            try {
-                const response = await fetch('/api/orders/statuses');
-                if (!response.ok) throw new Error('Failed to fetch statuses');
+        // Process orders data
+        function processOrdersData(apiData) {
+            const buy = [];
+            const sell = [];
+            
+            (apiData.orders || []).forEach(order => {
+                const processedOrder = {
+                    id: order.id || Math.random().toString(36).substr(2, 9),
+                    symbol: order.symbol || 'N/A',
+                    customer: order.customer || order.name || 'N/A',
+                    quantity: parseFloat(order.quantity) || 0,
+                    price: parseFloat(order.price) || 0,
+                    total: parseFloat(order.total) || 0,
+                    date: order.date || new Date().toISOString(),
+                    status: order.status || 'filled',
+                    type: order.type || (order.quantity > 0 ? 'buy' : 'sell')
+                };
                 
-                const data = await response.json();
-                return data.statuses;
-            } catch (error) {
-                console.error('Error fetching statuses:', error);
-                return [];
-            }
-        }
-
-        // Data processing
-        function processOrdersData(orders) {
-            const buy = orders.filter(o => o.type === 'BUY');
-            const sell = orders.filter(o => o.type === 'SELL');
+                if (processedOrder.type === 'buy') {
+                    buy.push(processedOrder);
+                } else {
+                    sell.push(processedOrder);
+                }
+            });
             
             return { buy, sell };
         }
 
+        // Filter functions
         function applyFilters() {
             filteredData.buy = ordersData.buy.filter(order => {
-                if (currentFilters.symbol && !order.symbol.toLowerCase().includes(currentFilters.symbol.toLowerCase())) {
-                    return false;
-                }
-                if (currentFilters.status && !order.status.toLowerCase().includes(currentFilters.status.toLowerCase())) {
-                    return false;
-                }
-                if (currentFilters.startDate && order.date < currentFilters.startDate) {
-                    return false;
-                }
-                if (currentFilters.endDate && order.date > currentFilters.endDate) {
-                    return false;
-                }
-                return true;
+                const symbolMatch = !currentFilters.symbol || 
+                    order.symbol.toLowerCase().includes(currentFilters.symbol.toLowerCase());
+                const statusMatch = !currentFilters.status || 
+                    order.status.toLowerCase() === currentFilters.status.toLowerCase();
+                return symbolMatch && statusMatch;
             });
-
+            
             filteredData.sell = ordersData.sell.filter(order => {
-                if (currentFilters.symbol && !order.symbol.toLowerCase().includes(currentFilters.symbol.toLowerCase())) {
-                    return false;
-                }
-                if (currentFilters.status && !order.status.toLowerCase().includes(currentFilters.status.toLowerCase())) {
-                    return false;
-                }
-                if (currentFilters.startDate && order.date < currentFilters.startDate) {
-                    return false;
-                }
-                if (currentFilters.endDate && order.date > currentFilters.endDate) {
-                    return false;
-                }
-                return true;
+                const symbolMatch = !currentFilters.symbol || 
+                    order.symbol.toLowerCase().includes(currentFilters.symbol.toLowerCase());
+                const statusMatch = !currentFilters.status || 
+                    order.status.toLowerCase() === currentFilters.status.toLowerCase();
+                return symbolMatch && statusMatch;
             });
-
+            
             currentPage.buy = 1;
             currentPage.sell = 1;
+            
+            renderKPIs();
+            renderTable('buy');
+            renderTable('sell');
         }
 
-        function sortData(type, column) {
-            const data = filteredData[type];
+        // Render functions
+        function renderKPIs() {
+            const buyTotal = filteredData.buy.reduce((sum, order) => sum + order.total, 0);
+            const sellTotal = filteredData.sell.reduce((sum, order) => sum + order.total, 0);
+            const netProfit = sellTotal - buyTotal;
+            const totalOrders = filteredData.buy.length + filteredData.sell.length;
             
-            if (sortColumn[type] === column) {
-                sortDirection[type] = sortDirection[type] === 'asc' ? 'desc' : 'asc';
-            } else {
-                sortColumn[type] = column;
-                sortDirection[type] = 'asc';
-            }
-
-            data.sort((a, b) => {
-                let aVal = a[column];
-                let bVal = b[column];
-
-                if (column === 'date') {
-                    aVal = new Date(aVal);
-                    bVal = new Date(bVal);
-                } else if (column === 'quantity' || column === 'price' || column === 'total') {
-                    aVal = parseFloat(aVal) || 0;
-                    bVal = parseFloat(bVal) || 0;
-                } else {
-                    aVal = String(aVal).toLowerCase();
-                    bVal = String(bVal).toLowerCase();
-                }
-
-                if (aVal < bVal) return sortDirection[type] === 'asc' ? -1 : 1;
-                if (aVal > bVal) return sortDirection[type] === 'asc' ? 1 : -1;
-                return 0;
-            });
-
-            renderTable(type);
-        }
-
-        // Rendering functions
-        function renderKPIs(metrics) {
-            document.getElementById('buy-total').textContent = formatCurrency(metrics.buy_total);
-            document.getElementById('sell-total').textContent = formatCurrency(metrics.sell_total);
-            document.getElementById('profit-total').textContent = formatCurrency(metrics.profit);
+            document.getElementById('buy-total').textContent = formatCurrency(buyTotal);
+            document.getElementById('sell-total').textContent = formatCurrency(sellTotal);
+            document.getElementById('profit-total').textContent = formatCurrency(netProfit);
+            document.getElementById('profit-total').className = 'kpi-value ' + (netProfit >= 0 ? 'positive' : 'negative');
+            document.getElementById('orders-count').textContent = formatNumber(totalOrders);
             
-            // Update sub-metrics
-            document.getElementById('sell-subtotal').textContent = formatCurrency(metrics.sell_total);
-            document.getElementById('positions-value').textContent = formatCurrency(0); // Will be updated when positions API is ready
-            
-            // Update trend indicators
-            const profitElement = document.getElementById('profit-total');
-            profitElement.className = 'kpi-value ' + (metrics.profit >= 0 ? 'positive' : 'negative');
-            
-            // Update counts
+            // Update table counts
             document.getElementById('buy-count').textContent = filteredData.buy.length;
             document.getElementById('sell-count').textContent = filteredData.sell.length;
         }
 
         function renderTable(type) {
-            const data = filteredData[type];
-            const start = (currentPage[type] - 1) * perPage;
-            const end = start + perPage;
-            const pageData = data.slice(start, end);
-            
             const tbody = document.getElementById(`${type}-orders-body`);
-            
-            if (pageData.length === 0) {
-                tbody.innerHTML = `
-                    <tr>
-                        <td colspan="7" class="empty-state">
-                            <div class="empty-state-icon">${type === 'buy' ? '📊' : '📈'}</div>
-                            <div class="empty-state-title">No ${type === 'buy' ? 'Buy' : 'Sell'} Orders</div>
-                            <div class="empty-state-text">No ${type} orders match your current filters</div>
-                        </td>
-                    </tr>
-                `;
-            } else {
-                tbody.innerHTML = pageData.map(order => `
-                    <tr>
-                        <td class="tooltip" data-tooltip="${order.customer}">${order.symbol}</td>
-                        <td>${order.customer}</td>
-                        <td>${formatNumber(order.quantity || 0)}</td>
-                        <td>${formatCurrency(order.price || 0)}</td>
-                        <td>${formatDate(order.date)}</td>
-                        <td><span class="status-badge ${getStatusClass(order.status)}">${order.status}</span></td>
-                        <td>
-                            <button class="action-btn" onclick="viewOrder('${order.id}')">View</button>
-                            <button class="action-btn secondary" onclick="cancelOrder('${order.id}')">Cancel</button>
-                        </td>
-                    </tr>
-                `).join('');
-            }
-
-            renderPagination(type);
-            updateSortIndicators(type);
-        }
-
-        function renderPagination(type) {
             const data = filteredData[type];
-            const totalPages = Math.ceil(data.length / perPage);
-            const pagination = document.getElementById(`${type}-pagination`);
             
-            if (totalPages <= 1) {
-                pagination.innerHTML = '';
+            if (data.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 20px;">No ${type} orders found</td></tr>`;
                 return;
             }
-
-            let html = '';
             
-            // Previous button
-            html += `<button class="page-btn" ${currentPage[type] === 1 ? 'disabled' : ''} onclick="changePage('${type}', ${currentPage[type] - 1})">Previous</button>`;
-            
-            // Page numbers
-            const maxPages = 5;
-            let startPage = Math.max(1, currentPage[type] - Math.floor(maxPages / 2));
-            let endPage = Math.min(totalPages, startPage + maxPages - 1);
-            
-            if (endPage - startPage < maxPages - 1) {
-                startPage = Math.max(1, endPage - maxPages + 1);
-            }
-            
-            for (let i = startPage; i <= endPage; i++) {
-                html += `<button class="page-btn ${i === currentPage[type] ? 'active' : ''}" onclick="changePage('${type}', ${i})">${i}</button>`;
-            }
-            
-            // Next button
-            html += `<button class="page-btn" ${currentPage[type] === totalPages ? 'disabled' : ''} onclick="changePage('${type}', ${currentPage[type] + 1})">Next</button>`;
-            
-            // Page info
-            html += `<span class="page-info">Page ${currentPage[type]} of ${totalPages}</span>`;
-            
-            pagination.innerHTML = html;
-        }
-
-        function updateSortIndicators(type) {
-            const headers = document.querySelectorAll(`#${type}-orders-table th.sortable`);
-            headers.forEach(header => {
-                header.classList.remove('sort-asc', 'sort-desc');
-                if (header.dataset.sort === sortColumn[type]) {
-                    header.classList.add(sortDirection[type] === 'asc' ? 'sort-asc' : 'sort-desc');
-                }
-            });
-        }
-
-        function changePage(type, page) {
-            currentPage[type] = page;
-            renderTable(type);
+            tbody.innerHTML = data.map(order => `
+                <tr>
+                    <td>${order.symbol}</td>
+                    <td>${order.customer}</td>
+                    <td>${formatNumber(order.quantity)}</td>
+                    <td>${formatCurrency(order.price)}</td>
+                    <td>${formatCurrency(order.total)}</td>
+                    <td>${formatDate(order.date)}</td>
+                </tr>
+            `).join('');
         }
 
         // Event handlers
-        function viewOrder(orderId) {
-            alert(`Viewing order: ${orderId}`);
-        }
-
-        function cancelOrder(orderId) {
-            if (confirm(`Are you sure you want to cancel order: ${orderId}?`)) {
-                alert(`Order ${orderId} cancelled`);
-            }
-        }
-
-        function setupEventListeners() {
-            // Symbol autocomplete
-            const symbolInput = document.getElementById('symbol-filter');
+        function setupEventHandlers() {
+            const symbolFilter = document.getElementById('symbol-filter');
+            const statusFilter = document.getElementById('status-filter');
+            const symbolClear = document.getElementById('symbol-clear');
             const autocompleteList = document.getElementById('symbol-autocomplete');
-            let autocompleteTimeout;
-
-            symbolInput.addEventListener('input', async (e) => {
-                clearTimeout(autocompleteTimeout);
-                const query = e.target.value.trim();
+            
+            let autocompleteTimer;
+            
+            // Symbol search with autocomplete
+            symbolFilter.addEventListener('input', async (e) => {
+                clearTimeout(autocompleteTimer);
+                const value = e.target.value.toLowerCase();
                 
-                if (query.length < 1) {
+                if (!value) {
                     autocompleteList.style.display = 'none';
+                    currentFilters.symbol = '';
+                    applyFilters();
                     return;
                 }
-
-                autocompleteTimeout = setTimeout(async () => {
-                    const symbols = await fetchSymbols(query);
+                
+                autocompleteTimer = setTimeout(async () => {
+                    const symbols = await fetchSymbols(value);
                     if (symbols.length > 0) {
-                        autocompleteList.innerHTML = symbols.map(symbol => 
-                            `<div class="autocomplete-item" data-symbol="${symbol}">${symbol}</div>`
+                        autocompleteList.innerHTML = symbols.map(s => 
+                            `<div class="autocomplete-item" data-symbol="${s}">${s}</div>`
                         ).join('');
                         autocompleteList.style.display = 'block';
+                        
+                        autocompleteList.querySelectorAll('.autocomplete-item').forEach(item => {
+                            item.onclick = () => {
+                                symbolFilter.value = item.dataset.symbol;
+                                autocompleteList.style.display = 'none';
+                                currentFilters.symbol = item.dataset.symbol;
+                                applyFilters();
+                            };
+                        });
                     } else {
                         autocompleteList.style.display = 'none';
                     }
                 }, 300);
             });
-
-
-            // Autocomplete item selection
-            autocompleteList.addEventListener('click', (e) => {
-                if (e.target.classList.contains('autocomplete-item')) {
-                    symbolInput.value = e.target.dataset.symbol;
-                    autocompleteList.style.display = 'none';
-                    applyFilters();
-                }
-            });
-
+            
+            // Clear button functionality
+            symbolClear.onclick = () => {
+                symbolFilter.value = '';
+                currentFilters.symbol = '';
+                autocompleteList.style.display = 'none';
+                applyFilters();
+            };
+            
+            // Status filter
+            statusFilter.onchange = () => {
+                currentFilters.status = statusFilter.value;
+                applyFilters();
+            };
+            
             // Hide autocomplete when clicking outside
             document.addEventListener('click', (e) => {
-                if (!symbolInput.contains(e.target) && !autocompleteList.contains(e.target)) {
+                if (!e.target.closest('.autocomplete-container')) {
                     autocompleteList.style.display = 'none';
                 }
             });
-
-            // Date presets
-            const presetButtons = document.querySelectorAll('.preset-btn');
-            presetButtons.forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    presetButtons.forEach(b => b.classList.remove('active'));
-                    e.target.classList.add('active');
-                    
-                    const preset = e.target.dataset.preset;
-                    const today = new Date();
-                    let startDate, endDate;
-                    
-                    switch (preset) {
-                        case 'today':
-                            startDate = endDate = today;
-                            break;
-                        case 'week':
-                            startDate = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
-                            endDate = today;
-                            break;
-                        case 'month':
-                            startDate = new Date(today.getFullYear(), today.getMonth(), 1);
-                            endDate = today;
-                            break;
-                        case 'quarter':
-                            startDate = new Date(today.getFullYear(), today.getMonth() - 3, 1);
-                            endDate = today;
-                            break;
-                    }
-                    
-                    document.getElementById('date-start').value = startDate.toISOString().split('T')[0];
-                    document.getElementById('date-end').value = endDate.toISOString().split('T')[0];
-                    
-                    currentFilters.startDate = document.getElementById('date-start').value;
-                    currentFilters.endDate = document.getElementById('date-end').value;
-                    applyFilters();
-                });
-            });
-
-            // Filter inputs
-            document.getElementById('symbol-filter').addEventListener('change', applyFilters);
-            document.getElementById('status-filter').addEventListener('change', applyFilters);
-            document.getElementById('date-start').addEventListener('change', (e) => {
-                currentFilters.startDate = e.target.value;
-                applyFilters();
-            });
-            document.getElementById('date-end').addEventListener('change', (e) => {
-                currentFilters.endDate = e.target.value;
-                applyFilters();
-            });
-
-            // Filter buttons
-            document.getElementById('apply-filters').addEventListener('click', applyFilters);
-            document.getElementById('clear-filters').addEventListener('click', clearFilters);
-
-            // Sortable headers
-            document.querySelectorAll('th.sortable').forEach(header => {
-                header.addEventListener('click', (e) => {
-                    const table = e.target.closest('table');
-                    const type = table.id.includes('buy') ? 'buy' : 'sell';
-                    const column = e.target.dataset.sort;
-                    sortData(type, column);
-                });
-            });
-        }
-
-        function applyFilters() {
-            // Update current filters
-            currentFilters.symbol = document.getElementById('symbol-filter').value.trim();
-            currentFilters.status = document.getElementById('status-filter').value.trim();
-            currentFilters.startDate = document.getElementById('date-start').value;
-            currentFilters.endDate = document.getElementById('date-end').value;
-            if (!validateDateRange()) return;
-            
-            // Apply filters to data
-            filterData();
-            
-            // Re-render everything
-            renderKPIs(aggregateOrdersMetrics(filteredData.buy.concat(filteredData.sell)));
-            renderTable('buy');
-            renderTable('sell');
-        }
-
-        function clearFilters() {
-            document.getElementById('symbol-filter').value = '';
-            document.getElementById('status-filter').value = '';
-            document.getElementById('date-start').value = '';
-            document.getElementById('date-end').value = '';
-            document.querySelectorAll('.preset-btn').forEach(btn => btn.classList.remove('active'));
-            
-            currentFilters = {
-                symbol: '',
-                status: '',
-                startDate: '',
-                endDate: ''
-            };
-            
-            applyFilters();
-        }
-
-        function applyFiltersToData() {
-            applyFilters();
-        }
-
-        function aggregateOrdersMetrics(orders) {
-            const buyOrders = orders.filter(o => o.type === 'BUY');
-            const sellOrders = orders.filter(o => o.type === 'SELL');
-            
-            const buyTotal = buyOrders.reduce((sum, order) => sum + (order.total || 0), 0);
-            const sellTotal = sellOrders.reduce((sum, order) => sum + (order.total || 0), 0);
-            const profit = sellTotal - buyTotal;
-            
-            return {
-                buy_total: buyTotal,
-                sell_total: sellTotal,
-                profit: profit,
-                orders_count: orders.length
-            };
         }
 
         // Initialize
         async function initialize() {
             try {
-                setupEventListeners();
+                showLoading();
                 
-                // Initialize date inputs with flatpickr
-                flatpickr('#date-start, #date-end', {
-                    dateFormat: 'Y-m-d',
-                    allowInput: true
-                });
-                
-                // Fetch initial data
+                // Fetch orders data
                 const data = await fetchOrders();
-                ordersData = processOrdersData(data.orders);
-                filteredData = { buy: [...ordersData.buy], sell: [...ordersData.sell] };
+                ordersData = processOrdersData(data);
+                filteredData = { 
+                    buy: [...ordersData.buy], 
+                    sell: [...ordersData.sell] 
+                };
                 
                 // Hide loading, show content
-                document.getElementById('loading').style.display = 'none';
+                hideLoading();
                 document.getElementById('filters-section').style.display = 'block';
                 document.getElementById('kpi-section').style.display = 'grid';
                 document.getElementById('tables-section').style.display = 'grid';
                 
-                // Render initial data
-                renderKPIs(data.metrics);
+                // Initial render
+                renderKPIs();
                 renderTable('buy');
                 renderTable('sell');
                 
-                // Fetch and populate status dropdown
-                const statuses = await fetchStatuses();
-                const statusSelect = document.getElementById('status-filter');
-                statuses.forEach(status => {
-                    const option = document.createElement('option');
-                    option.value = status.toLowerCase();
-                    option.textContent = status;
-                    statusSelect.appendChild(option);
-                });
+                // Setup event handlers
+                setupEventHandlers();
                 
             } catch (error) {
                 showError('Failed to load orders data. Please refresh the page.');
@@ -1405,8 +829,24 @@
             }
         }
 
+        // UI helper functions
+        function showLoading() {
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('error').style.display = 'none';
+        }
+
+        function hideLoading() {
+            document.getElementById('loading').style.display = 'none';
+        }
+
+        function showError(message) {
+            document.getElementById('error').textContent = message;
+            document.getElementById('error').style.display = 'block';
+            document.getElementById('loading').style.display = 'none';
+        }
+
         // Start the application
-        document.addEventListener('DOMContentLoaded', initialize);
+        initialize();
     </script>
 </body>
 </html>

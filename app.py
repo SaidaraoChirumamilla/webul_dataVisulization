@@ -342,75 +342,6 @@ def parse_float(value, default=0):
 
 
 
-def process_orders_list(orders_data):
-    result = []
-    if not orders_data:
-        return result
-    for i, row in enumerate(orders_data):
-        keys = {k.lower(): k for k in row.keys()}
-        oid = None
-        for k in keys:
-            if 'side' in k:
-                continue
-            if any(x in k for x in ['order id', 'orderid', ' id ', 'id', 'trade id', 'transaction id']):
-                v = row[keys[k]]
-                oid = str(v).strip() if v is not None else None
-                if oid:
-                    break
-        cust = None
-        for k in keys:
-            if any(x in k for x in ['customer', 'customer name', 'client', 'account', 'account name', 'name']):
-                v = row[keys[k]]
-                cust = str(v).strip() if v is not None else None
-                if cust:
-                    break
-        status = None
-        for k in keys:
-            if any(x in k for x in ['status', 'state']):
-                v = row[keys[k]]
-                status = str(v).strip() if v is not None else None
-                if status:
-                    break
-        date_val = None
-        for k in keys:
-            if any(x in k for x in ['filled time', 'placed time', 'order date', 'date', 'timestamp']):
-                v = row[keys[k]]
-                date_val = str(v).strip() if v is not None else None
-                if date_val:
-                    if ' ' in date_val:
-                        date_val = date_val.split(' ')[0]
-                    break
-        total = 0.0
-        for k in keys:
-            if any(x in k for x in ['amount', 'value']) and not any(y in k for y in ['qty', 'quantity', 'shares']):
-                total = parse_float(row[keys[k]], 0)
-                if total != 0:
-                    break
-        if total == 0:
-            price = 0.0
-            qty = 0.0
-            for k in keys:
-                if 'price' in k:
-                    price = parse_float(row[keys[k]], 0)
-                    if price != 0:
-                        break
-            for k in keys:
-                if any(x in k for x in ['quantity', 'qty', 'shares', 'filled']):
-                    qty = parse_float(row[keys[k]], 0)
-                    if qty != 0:
-                        break
-            total = price * qty
-        if not oid:
-            oid = f"ORD-{i+1}"
-        result.append({
-            'id': oid,
-            'customer': cust or 'N/A',
-            'date': date_val or '',
-            'status': status or 'N/A',
-            'total': float(total)
-        })
-    return result
-
 def extract_positions_from_sheet(rows):
     positions = []
     if not rows:
@@ -526,6 +457,21 @@ def index():
     """Main dashboard page"""
     return render_template('index.html')
 
+@app.route('/orders')
+def orders():
+    """Orders dashboard page"""
+    return render_template('orders.html')
+
+@app.route('/tests')
+def tests():
+    """Unit tests page"""
+    return render_template('tests.html')
+
+@app.route('/e2e-tests')
+def e2e_tests():
+    """End-to-end tests page"""
+    return render_template('e2e-tests.html')
+
 @app.route('/api/data')
 def get_data():
     """API endpoint to fetch and return processed data"""
@@ -541,163 +487,15 @@ def get_data():
             'error': error_msg
         }), 500
     
-    # Fetch orders data from separate sheet
-    orders_data = get_sheet_data(ORDERS_SPREADSHEET_ID, ORDERS_WORKSHEET_GID)
-    
     return jsonify({
         'monthly_cash_flow': process_monthly_cash_flow(raw_data),
         'yearly_transfer_volume': process_yearly_transfer_volume(raw_data),
         'transaction_status': process_transaction_status(raw_data),
         'transfer_by_type': process_transfer_by_type(raw_data),
-        'summary_metrics': calculate_summary_metrics(raw_data),
-        'order_analysis': process_order_analysis(orders_data),
-        'orders_list': process_orders_list(orders_data)
+        'summary_metrics': calculate_summary_metrics(raw_data)
     })
 
-def get_orders_sheet_data():
-    """Fetch raw orders sheet from Google Sheets"""
-    return get_sheet_data(ORDERS_SPREADSHEET_ID, ORDERS_WORKSHEET_GID)
 
-def process_orders_list_v2(rows):
-    """Normalize orders for modern view"""
-    orders = []
-    if not rows:
-        return orders
-    for i, row in enumerate(rows):
-        keys = {k.lower(): k for k in row.keys()}
-        oid = None
-        for k in keys:
-            if 'side' in k:
-                continue
-            if any(x in k for x in ['order id', 'orderid', ' id ', 'id', 'trade id', 'transaction id']):
-                v = row[keys[k]]
-                oid = str(v).strip() if v is not None else None
-                if oid:
-                    break
-        cust = None
-        for k in keys:
-            if any(x in k for x in ['customer', 'customer name', 'client', 'account', 'account name', 'name']):
-                v = row[keys[k]]
-                cust = str(v).strip() if v is not None else None
-                if cust:
-                    break
-        status = None
-        for k in keys:
-            if any(x in k for x in ['status', 'state']):
-                v = row[keys[k]]
-                status = str(v).strip() if v is not None else None
-                if status:
-                    break
-        date_val = None
-        for k in keys:
-            if any(x in k for x in ['filled time', 'placed time', 'order date', 'date', 'timestamp']):
-                v = row[keys[k]]
-                date_val = str(v).strip() if v is not None else None
-                if date_val:
-                    if ' ' in date_val:
-                        date_val = date_val.split(' ')[0]
-                    break
-        total = 0.0
-        for k in keys:
-            if any(x in k for x in ['amount', 'value']) and not any(y in k for y in ['qty', 'quantity', 'shares']):
-                total = parse_float(row[keys[k]], 0)
-                if total != 0:
-                    break
-        if total == 0:
-            price = 0.0
-            qty = 0.0
-            for k in keys:
-                if 'price' in k:
-                    price = parse_float(row[keys[k]], 0)
-                    if price != 0:
-                        break
-            for k in keys:
-                if any(x in k for x in ['quantity', 'qty', 'shares', 'filled']):
-                    qty = parse_float(row[keys[k]], 0)
-                    if qty != 0:
-                        break
-            total = price * qty
-        if not oid:
-            oid = f"ORD-{i+1}"
-        orders.append({
-            'id': oid,
-            'customer': cust or 'N/A',
-            'date': date_val or '',
-            'status': status or 'N/A',
-            'total': float(total),
-            'type': 'BUY' if (status and status.lower() == 'buy') or (row.get('Side', '').upper() == 'BUY') else 'SELL',
-            'symbol': row.get('Symbol', row.get('symbol', 'N/A'))
-        })
-    return orders
-
-def aggregate_orders_metrics(orders):
-    """Aggregate KPIs for orders view"""
-    buy_total = sum(o['total'] for o in orders if o['type'] == 'BUY')
-    sell_total = sum(o['total'] for o in orders if o['type'] == 'SELL')
-    profit = sell_total - buy_total
-    return {
-        'buy_total': buy_total,
-        'sell_total': sell_total,
-        'profit': profit,
-        'orders_count': len(orders)
-    }
-
-@app.route('/api/orders')
-def api_orders():
-    """API endpoint for orders view with filters"""
-    orders = process_orders_list_v2(get_orders_sheet_data())
-    # Apply filters from query params
-    symbol_filter = request.args.get('symbol', '').strip().lower()
-    status_filter = request.args.get('status', '').strip().lower()
-    start_date = request.args.get('start', '').strip()
-    end_date = request.args.get('end', '').strip()
-    filtered = []
-    for o in orders:
-        if symbol_filter and symbol_filter not in o['symbol'].lower():
-            continue
-        if status_filter and status_filter not in o['status'].lower():
-            continue
-        if start_date and o['date'] < start_date:
-            continue
-        if end_date and o['date'] > end_date:
-            continue
-        filtered.append(o)
-    metrics = aggregate_orders_metrics(filtered)
-    # Pagination
-    page = int(request.args.get('page', 1))
-    per_page = int(request.args.get('per_page', 50))
-    start = (page - 1) * per_page
-    end = start + per_page
-    paginated = filtered[start:end]
-    return jsonify({
-        'orders': paginated,
-        'metrics': metrics,
-        'page': page,
-        'per_page': per_page,
-        'total': len(filtered)
-    })
-
-@app.route('/api/orders/symbols')
-def api_orders_symbols():
-    """API endpoint for symbol autocomplete"""
-    orders = process_orders_list_v2(get_orders_sheet_data())
-    symbols = sorted(list(set(o['symbol'] for o in orders if o['symbol'] != 'N/A')))
-    query = request.args.get('q', '').lower()
-    if query:
-        symbols = [s for s in symbols if query in s.lower()]
-    return jsonify({'symbols': symbols[:10]})
-
-@app.route('/api/orders/statuses')
-def api_orders_statuses():
-    """API endpoint for status dropdown"""
-    orders = process_orders_list_v2(get_orders_sheet_data())
-    statuses = sorted(list(set(o['status'] for o in orders if o['status'] != 'N/A')))
-    return jsonify({'statuses': statuses})
-
-@app.route('/orders')
-def orders_view():
-    """Modern orders view page"""
-    return render_template('orders.html')
 
 @app.route('/api/positions')
 def api_positions():
@@ -745,5 +543,88 @@ def get_raw_data():
         return jsonify({'error': 'Unable to fetch data'}), 500
     return jsonify(data)
 
+@app.route('/api/orders')
+def extract_field(row, candidates, default=None, transform=lambda x: x):
+    for k in row:
+        if any(x in k.lower() for x in candidates):
+            v = row[k]
+            return transform(v) if v is not None else default
+    return default
+def get_orders():
+    raw_data = get_sheet_data()
+    
+    if not raw_data:
+        return jsonify({'buy': [], 'sell': [], 'error': 'Unable to fetch data from Google Sheets'}), 500
+    
+    # Process orders data - extract buy and sell orders
+    buy_orders, sell_orders = [], []
+    
+    for i, row in enumerate(raw_data):
+        symbol = extract_field(row, ['symbol', 'ticker', 'stock', 'instrument'], 'N/A', lambda v: str(v).strip())
+        side = extract_field(row, ['side', 'action', 'type', 'buy_sell'], 'buy', lambda v: str(v).strip().lower())
+        quantity = extract_field(row, ['quantity', 'qty', 'shares', 'filled'], 0, lambda v: parse_float(v, 0))
+        price = extract_field(row, ['price'], 0, lambda v: parse_float(v, 0))
+        total = extract_field(row, ['amount', 'value', 'total'], 0, lambda v: parse_float(v, 0))
+        status = extract_field(row, ['status', 'state'], 'N/A', lambda v: str(v).strip())
+        date_val = extract_field(row, ['date', 'time', 'timestamp'], '', lambda v: str(v).strip())
+        order_id = extract_field(row, ['order id', 'orderid', 'trade id', 'id'], f"ORD-{i+1}", lambda v: str(v).strip())
+        
+        # Fallback for total calculation
+        if not total and price > 0 and quantity > 0:
+            total = price * quantity
+
+        order = {
+            'id': order_id,
+            'symbol': symbol,
+            'quantity': quantity,
+            'price': price,
+            'total': total,
+            'status': status,
+            'date': date_val,
+            'side': side
+        }
+
+        if 'sell' in side:
+            sell_orders.append(order)
+        else:
+            buy_orders.append(order)
+
+    return jsonify({
+        'buy': buy_orders,
+        'sell': sell_orders,
+        'total_buy': len(buy_orders),
+        'total_sell': len(sell_orders)
+    })
+
+@app.route('/api/orders/symbols')
+def get_order_symbols():
+    """API endpoint to fetch unique symbols from orders"""
+    raw_data = get_sheet_data()
+    
+    if not raw_data:
+        return jsonify({'symbols': []}), 500
+    
+    symbols = set()
+
+@app.route('/test-company-filter')
+def test_company_filter():
+    """Test page for company filter component"""
+    return render_template('company-filter-test.html')
+    
+    for row in raw_data:
+        keys = {k.lower(): k for k in row.keys()}
+        
+        # Extract symbol
+        symbol = None
+        for k in keys:
+            if any(x in k for x in ['symbol', 'ticker', 'stock', 'instrument']):
+                v = row[keys[k]]
+                symbol = str(v).strip() if v is not None else None
+                if symbol and symbol != 'N/A':
+                    symbols.add(symbol)
+                    break
+    
+    return jsonify({'symbols': sorted(list(symbols))})
+
 if __name__ == '__main__':
-    app.run(debug=True, host='127.0.0.1', port=5001)
+    app.run(debug=True, host='127.0.0.1', port=5003)

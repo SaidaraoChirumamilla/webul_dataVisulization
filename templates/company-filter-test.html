@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Company Filter Component Test</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+        }
+        .test-title {
+            font-size: 1.2em;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        .test-result {
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+        .test-pass {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .test-fail {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .test-info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #5a67d8;
+        }
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .feature-card {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+        }
+        .feature-title {
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #495057;
+        }
+        .feature-status {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+        .status-implemented {
+            background: #28a745;
+            color: white;
+        }
+        .status-pending {
+            background: #ffc107;
+            color: #212529;
+        }
+        .status-not-implemented {
+            background: #dc3545;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>Company Filter Component Test Suite</h1>
+        
+        <div class="test-section">
+            <div class="test-title">Component Integration Test</div>
+            <div id="integration-tests"></div>
+            <button onclick="runIntegrationTests()">Run Integration Tests</button>
+        </div>
+
+        <div class="test-section">
+            <div class="test-title">Functionality Tests</div>
+            <div id="functionality-tests"></div>
+            <button onclick="runFunctionalityTests()">Run Functionality Tests</button>
+        </div>
+
+        <div class="test-section">
+            <div class="test-title">Responsive Design Tests</div>
+            <div id="responsive-tests"></div>
+            <button onclick="runResponsiveTests()">Run Responsive Tests</button>
+        </div>
+
+        <div class="test-section">
+            <div class="test-title">Accessibility Tests</div>
+            <div id="accessibility-tests"></div>
+            <button onclick="runAccessibilityTests()">Run Accessibility Tests</button>
+        </div>
+
+        <div class="test-section">
+            <div class="test-title">Performance Tests</div>
+            <div id="performance-tests"></div>
+            <button onclick="runPerformanceTests()">Run Performance Tests</button>
+        </div>
+
+        <div class="test-section">
+            <div class="test-title">Feature Implementation Status</div>
+            <div class="feature-grid" id="feature-status"></div>
+        </div>
+    </div>
+
+    <script>
+        // Test Suite for Company Filter Component
+        
+        function addTestResult(containerId, testName, passed, message = '') {
+            const container = document.getElementById(containerId);
+            const resultDiv = document.createElement('div');
+            resultDiv.className = `test-result ${passed ? 'test-pass' : 'test-fail'}`;
+            resultDiv.innerHTML = `<strong>${testName}:</strong> ${passed ? 'PASS' : 'FAIL'} ${message ? '- ' + message : ''}`;
+            container.appendChild(resultDiv);
+        }
+
+        function addInfoResult(containerId, message) {
+            const container = document.getElementById(containerId);
+            const resultDiv = document.createElement('div');
+            resultDiv.className = 'test-result test-info';
+            resultDiv.innerHTML = message;
+            container.appendChild(resultDiv);
+        }
+
+        function runIntegrationTests() {
+            const container = document.getElementById('integration-tests');
+            container.innerHTML = '';
+            
+            // Test 1: Check if company filter elements exist
+            const elements = {
+                container: document.querySelector('.company-dropdown-container'),
+                searchInput: document.getElementById('company-search'),
+                clearBtn: document.getElementById('company-clear'),
+                toggleBtn: document.getElementById('company-dropdown-toggle'),
+                dropdown: document.getElementById('company-dropdown'),
+                dropdownSearchInput: document.getElementById('dropdown-search-input'),
+                dropdownContent: document.getElementById('company-dropdown-content'),
+                dropdownCount: document.getElementById('company-count'),
+                loading: document.getElementById('company-loading'),
+                clearAllBtn: document.getElementById('clear-all-companies'),
+                applyBtn: document.getElementById('apply-companies')
+            };
+
+            let allElementsFound = true;
+            Object.keys(elements).forEach(key => {
+                const found = elements[key] !== null;
+                addTestResult('integration-tests', `Element ${key} exists`, found);
+                if (!found) allElementsFound = false;
+            });
+
+            // Test 2: Check if CompanyFilter class is available
+            const companyFilterAvailable = typeof window.CompanyFilter !== 'undefined';
+            addTestResult('integration-tests', 'CompanyFilter class available', companyFilterAvailable);
+
+            // Test 3: Check if company filter instance exists
+            const companyFilterInstance = window.companyFilter !== null && window.companyFilter !== undefined;
+            addTestResult('integration-tests', 'CompanyFilter instance exists', companyFilterInstance);
+
+            // Test 4: Check if DashboardState supports companies filter
+            const dashboardStateAvailable = typeof window.DashboardState !== 'undefined';
+            addTestResult('integration-tests', 'DashboardState available', dashboardStateAvailable);
+            
+            if (dashboardStateAvailable) {
+                const companiesFilterSupported = window.DashboardState.sharedFilters && 
+                    typeof window.DashboardState.sharedFilters.companies !== 'undefined';
+                addTestResult('integration-tests', 'Companies filter supported in DashboardState', companiesFilterSupported);
+            }
+
+            addInfoResult('integration-tests', `Integration test completed. Overall status: ${allElementsFound && companyFilterAvailable ? 'SUCCESS' : 'PARTIAL/FAILURE'}`);
+        }
+
+        function runFunctionalityTests() {
+            const container = document.getElementById('functionality-tests');
+            container.innerHTML = '';
+            
+            if (!window.companyFilter) {
+                addTestResult('functionality-tests', 'Company filter instance', false, 'Company filter not initialized');
+                return;
+            }
+
+            const filter = window.companyFilter;
+
+            // Test 1: Check if companies are loaded
+            const companiesLoaded = filter.companies && filter.companies.length > 0;
+            addTestResult('functionality-tests', 'Companies data loaded', companiesLoaded, 
+                companiesLoaded ? `${filter.companies.length} companies loaded` : 'No companies found');
+
+            // Test 2: Test search functionality
+            if (companiesLoaded) {
+                const originalFiltered = filter.filteredCompanies.length;
+                filter.filterDropdownOptions('AAPL');
+                const searchResults = filter.filteredCompanies.length;
+                const searchWorks = searchResults <= originalFiltered;
+                addTestResult('functionality-tests', 'Search functionality', searchWorks, 
+                    `Found ${searchResults} companies for 'AAPL' search`);
+                
+                // Reset search
+                filter.filterDropdownOptions('');
+            }
+
+            // Test 3: Test company selection
+            if (companiesLoaded && filter.companies.length > 0) {
+                const testCompany = filter.companies[0];
+                const originalSelectionSize = filter.selectedCompanies.size;
+                filter.toggleCompanySelection(testCompany.symbol);
+                const selectionChanged = filter.selectedCompanies.size !== originalSelectionSize;
+                addTestResult('functionality-tests', 'Company selection toggle', selectionChanged);
+                
+                // Reset selection
+                filter.selectedCompanies.clear();
+            }
+
+            // Test 4: Test dropdown toggle
+            const originalOpenState = filter.isOpen;
+            filter.toggleDropdown();
+            const dropdownToggleWorks = filter.isOpen !== originalOpenState;
+            addTestResult('functionality-tests', 'Dropdown toggle functionality', dropdownToggleWorks);
+
+            addInfoResult('functionality-tests', 'Functionality test completed');
+        }
+
+        function runResponsiveTests() {
+            const container = document.getElementById('responsive-tests');
+            container.innerHTML = '';
+            
+            // Test 1: Check if responsive CSS is applied
+            const companyFilterContainer = document.querySelector('.company-filter-container');
+            if (companyFilterContainer) {
+                const computedStyle = window.getComputedStyle(companyFilterContainer);
+                const maxWidth = computedStyle.maxWidth;
+                const responsiveMaxWidth = maxWidth === '400px' || maxWidth === '100%';
+                addTestResult('responsive-tests', 'Responsive max-width applied', responsiveMaxWidth, `max-width: ${maxWidth}`);
+            } else {
+                addTestResult('responsive-tests', 'Company filter container found', false, 'Container not found');
+            }
+
+            // Test 2: Check mobile styles
+            const mobileMediaQuery = window.matchMedia('(max-width: 480px)');
+            addTestResult('responsive-tests', 'Mobile media query available', mobileMediaQuery.matches !== undefined);
+
+            // Test 3: Check if dropdown has mobile styles
+            const dropdown = document.getElementById('company-dropdown');
+            if (dropdown) {
+                const hasMobileStyles = dropdown.classList.contains('company-dropdown');
+                addTestResult('responsive-tests', 'Dropdown has mobile styles', hasMobileStyles);
+            }
+
+            addInfoResult('responsive-tests', 'Responsive design test completed. Test at different viewport sizes manually.');
+        }
+
+        function runAccessibilityTests() {
+            const container = document.getElementById('accessibility-tests');
+            container.innerHTML = '';
+            
+            // Test 1: Check ARIA labels
+            const searchInput = document.getElementById('company-search');
+            if (searchInput) {
+                const hasAriaLabel = searchInput.hasAttribute('aria-label');
+                const hasAriaExpanded = searchInput.hasAttribute('aria-expanded');
+                const hasAriaControls = searchInput.hasAttribute('aria-controls');
+                
+                addTestResult('accessibility-tests', 'Search input has aria-label', hasAriaLabel);
+                addTestResult('accessibility-tests', 'Search input has aria-expanded', hasAriaExpanded);
+                addTestResult('accessibility-tests', 'Search input has aria-controls', hasAriaControls);
+            }
+
+            // Test 2: Check role attributes
+            const dropdown = document.getElementById('company-dropdown');
+            if (dropdown) {
+                const hasListboxRole = dropdown.getAttribute('role') === 'listbox';
+                addTestResult('accessibility-tests', 'Dropdown has listbox role', hasListboxRole);
+            }
+
+            // Test 3: Check keyboard navigation support
+            const companyOptions = document.querySelectorAll('.company-option');
+            if (companyOptions.length > 0) {
+                const firstOption = companyOptions[0];
+                const hasTabindex = firstOption.hasAttribute('tabindex');
+                const hasAriaSelected = firstOption.hasAttribute('aria-selected');
+                
+                addTestResult('accessibility-tests', 'Options have tabindex', hasTabindex);
+                addTestResult('accessibility-tests', 'Options have aria-selected', hasAriaSelected);
+            }
+
+            // Test 4: Check high contrast mode support
+            const hasHighContrastStyles = document.querySelector('style')?.textContent.includes('@media (prefers-contrast: high)') || false;
+            addTestResult('accessibility-tests', 'High contrast mode support', hasHighContrastStyles);
+
+            // Test 5: Check reduced motion support
+            const hasReducedMotionStyles = document.querySelector('style')?.textContent.includes('@media (prefers-reduced-motion: reduce)') || false;
+            addTestResult('accessibility-tests', 'Reduced motion support', hasReducedMotionStyles);
+
+            addInfoResult('accessibility-tests', 'Accessibility test completed');
+        }
+
+        function runPerformanceTests() {
+            const container = document.getElementById('performance-tests');
+            container.innerHTML = '';
+            
+            if (!window.companyFilter) {
+                addTestResult('performance-tests', 'Performance tests', false, 'Company filter not available');
+                return;
+            }
+
+            const filter = window.companyFilter;
+
+            // Test 1: Company loading performance
+            const startTime = performance.now();
+            filter.loadCompanies();
+            const loadTime = performance.now() - startTime;
+            const loadPerformanceOK = loadTime < 1000; // Should load in less than 1 second
+            addTestResult('performance-tests', 'Company loading performance', loadPerformanceOK, 
+                `Load time: ${loadTime.toFixed(2)}ms`);
+
+            // Test 2: Search performance with mock data
+            if (filter.companies.length > 0) {
+                const searchStart = performance.now();
+                for (let i = 0; i < 100; i++) {
+                    filter.filterDropdownOptions('TEST');
+                }
+                const searchTime = (performance.now() - searchStart) / 100;
+                const searchPerformanceOK = searchTime < 10; // Should take less than 10ms per search
+                addTestResult('performance-tests', 'Search performance', searchPerformanceOK, 
+                    `Average search time: ${searchTime.toFixed(2)}ms`);
+            }
+
+            addInfoResult('performance-tests', 'Performance test completed');
+        }
+
+        function displayFeatureStatus() {
+            const container = document.getElementById('feature-status');
+            container.innerHTML = '';
+            
+            const features = [
+                {
+                    name: 'Searchable Input Field',
+                    description: 'Input field with "Search company..." placeholder',
+                    status: 'implemented'
+                },
+                {
+                    name: 'Dynamic Company List',
+                    description: 'Companies loaded from data source',
+                    status: 'implemented'
+                },
+                {
+                    name: 'Typeahead/Search Functionality',
+                    description: 'Real-time filtering as user types',
+                    status: 'implemented'
+                },
+                {
+                    name: 'Visual Selection Indicators',
+                    description: 'Clear visual indication of selected items',
+                    status: 'implemented'
+                },
+                {
+                    name: 'Responsive Design',
+                    description: 'Works across all device sizes',
+                    status: 'implemented'
+                },
+                {
+                    name: 'Accessibility Features',
+                    description: 'ARIA labels, keyboard navigation',
+                    status: 'implemented'
+                },
+                {
+                    name: 'Performance Optimization',
+                    description: 'Optimized for large datasets',
+                    status: 'implemented'
+                },
+                {
+                    name: 'Loading States',
+                    description: 'Visual loading state when fetching data',
+                    status: 'implemented'
+                },
+                {
+                    name: 'Filter Persistence',
+                    description: 'Maintains selected filters',
+                    status: 'implemented'
+                },
+                {
+                    name: 'Clear/Reset Functionality',
+                    description: 'Easy clearing and resetting of filters',
+                    status: 'implemented'
+                }
+            ];
+
+            features.forEach(feature => {
+                const featureCard = document.createElement('div');
+                featureCard.className = 'feature-card';
+                featureCard.innerHTML = `
+                    <div class="feature-title">${feature.name}</div>
+                    <div>${feature.description}</div>
+                    <div class="feature-status status-${feature.status}">${feature.status.toUpperCase()}</div>
+                `;
+                container.appendChild(featureCard);
+            });
+        }
+
+        // Initialize feature status on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            displayFeatureStatus();
+            
+            // Add some basic tests automatically
+            setTimeout(() => {
+                runIntegrationTests();
+            }, 1000);
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Unit Tests</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-container {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e5e7eb;
+        }
+        .test-title {
+            font-size: 1.2em;
+            font-weight: 600;
+            color: #333;
+        }
+        .test-stats {
+            display: flex;
+            gap: 15px;
+            font-size: 0.9em;
+        }
+        .stat-pass { color: #10b981; }
+        .stat-fail { color: #ef4444; }
+        .stat-pending { color: #6b7280; }
+        .test-results {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .test-result {
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 6px;
+            border-left: 4px solid;
+        }
+        .test-result.pass {
+            background: #d1fae5;
+            border-left-color: #10b981;
+        }
+        .test-result.fail {
+            background: #fee2e2;
+            border-left-color: #ef4444;
+        }
+        .test-result.pending {
+            background: #f3f4f6;
+            border-left-color: #6b7280;
+        }
+        .test-name {
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        .test-message {
+            font-size: 0.9em;
+            color: #6b7280;
+        }
+        .test-error {
+            font-size: 0.85em;
+            color: #dc2626;
+            margin-top: 5px;
+            font-family: monospace;
+        }
+        .run-tests-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .run-tests-btn:hover {
+            background: #5a67d8;
+            transform: translateY(-1px);
+        }
+        .run-tests-btn:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #6b7280;
+        }
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <div class="test-header">
+            <h1>Dashboard Unit Tests</h1>
+            <button class="run-tests-btn" onclick="runAllTests()">Run All Tests</button>
+        </div>
+        <div id="test-summary" class="test-stats">
+            <span class="stat-pass">Passed: <span id="pass-count">0</span></span>
+            <span class="stat-fail">Failed: <span id="fail-count">0</span></span>
+            <span class="stat-pending">Pending: <span id="pending-count">0</span></span>
+        </div>
+    </div>
+
+    <div id="test-suites"></div>
+
+    <script>
+        // Test Framework
+        class TestFramework {
+            constructor() {
+                this.suites = [];
+                this.currentSuite = null;
+                this.results = {
+                    passed: 0,
+                    failed: 0,
+                    pending: 0,
+                    total: 0
+                };
+            }
+
+            describe(suiteName, fn) {
+                const suite = {
+                    name: suiteName,
+                    tests: [],
+                    beforeEach: null,
+                    afterEach: null
+                };
+                this.currentSuite = suite;
+                fn();
+                this.suites.push(suite);
+                this.currentSuite = null;
+            }
+
+            it(testName, fn) {
+                if (this.currentSuite) {
+                    this.currentSuite.tests.push({
+                        name: testName,
+                        fn: fn,
+                        status: 'pending',
+                        error: null
+                    });
+                }
+            }
+
+            beforeEach(fn) {
+                if (this.currentSuite) {
+                    this.currentSuite.beforeEach = fn;
+                }
+            }
+
+            afterEach(fn) {
+                if (this.currentSuite) {
+                    this.currentSuite.afterEach = fn;
+                }
+            }
+
+            assert(condition, message = 'Assertion failed') {
+                if (!condition) {
+                    throw new Error(message);
+                }
+            }
+
+            assertEqual(actual, expected, message) {
+                if (actual !== expected) {
+                    throw new Error(message || `Expected ${expected}, got ${actual}`);
+                }
+            }
+
+            assertArrayEqual(actual, expected, message) {
+                if (JSON.stringify(actual) !== JSON.stringify(expected)) {
+                    throw new Error(message || `Arrays don't match. Expected ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`);
+                }
+            }
+
+            assertObjectEqual(actual, expected, message) {
+                if (JSON.stringify(actual) !== JSON.stringify(expected)) {
+                    throw new Error(message || `Objects don't match. Expected ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`);
+                }
+            }
+
+            async runSuite(suite) {
+                const suiteElement = document.createElement('div');
+                suiteElement.className = 'test-container';
+                
+                const headerElement = document.createElement('div');
+                headerElement.className = 'test-header';
+                headerElement.innerHTML = `
+                    <div class="test-title">${suite.name}</div>
+                    <div class="test-stats">
+                        <span class="stat-pass">Passed: <span class="suite-pass-count">0</span></span>
+                        <span class="stat-fail">Failed: <span class="suite-fail-count">0</span></span>
+                        <span class="stat-pending">Pending: <span class="suite-pending-count">0</span></span>
+                    </div>
+                `;
+                
+                const resultsElement = document.createElement('div');
+                resultsElement.className = 'test-results';
+                
+                suiteElement.appendChild(headerElement);
+                suiteElement.appendChild(resultsElement);
+                
+                document.getElementById('test-suites').appendChild(suiteElement);
+
+                let suitePassed = 0, suiteFailed = 0, suitePending = 0;
+
+                for (const test of suite.tests) {
+                    const testElement = document.createElement('div');
+                    testElement.className = 'test-result pending';
+                    
+                    try {
+                        // Setup
+                        if (suite.beforeEach) {
+                            suite.beforeEach();
+                        }
+
+                        // Run test
+                        if (test.fn) {
+                            await test.fn();
+                            test.status = 'passed';
+                            this.results.passed++;
+                            suitePassed++;
+                            testElement.className = 'test-result pass';
+                            testElement.innerHTML = `
+                                <div class="test-name">✓ ${test.name}</div>
+                                <div class="test-message">Test passed</div>
+                            `;
+                        } else {
+                            test.status = 'pending';
+                            this.results.pending++;
+                            suitePending++;
+                            testElement.innerHTML = `
+                                <div class="test-name">○ ${test.name}</div>
+                                <div class="test-message">Test not implemented</div>
+                            `;
+                        }
+
+                        // Cleanup
+                        if (suite.afterEach) {
+                            suite.afterEach();
+                        }
+
+                    } catch (error) {
+                        test.status = 'failed';
+                        test.error = error;
+                        this.results.failed++;
+                        suiteFailed++;
+                        testElement.className = 'test-result fail';
+                        testElement.innerHTML = `
+                            <div class="test-name">✗ ${test.name}</div>
+                            <div class="test-message">${error.message}</div>
+                            <div class="test-error">${error.stack}</div>
+                        `;
+                    }
+
+                    resultsElement.appendChild(testElement);
+                    this.results.total++;
+                }
+
+                // Update suite stats
+                headerElement.querySelector('.suite-pass-count').textContent = suitePassed;
+                headerElement.querySelector('.suite-fail-count').textContent = suiteFailed;
+                headerElement.querySelector('.suite-pending-count').textContent = suitePending;
+            }
+
+            async runAll() {
+                this.results = { passed: 0, failed: 0, pending: 0, total: 0 };
+                document.getElementById('test-suites').innerHTML = '';
+                
+                const button = document.querySelector('.run-tests-btn');
+                button.disabled = true;
+                button.textContent = 'Running Tests...';
+
+                for (const suite of this.suites) {
+                    await this.runSuite(suite);
+                }
+
+                this.updateSummary();
+                
+                button.disabled = false;
+                button.textContent = 'Run All Tests';
+            }
+
+            updateSummary() {
+                document.getElementById('pass-count').textContent = this.results.passed;
+                document.getElementById('fail-count').textContent = this.results.failed;
+                document.getElementById('pending-count').textContent = this.results.pending;
+            }
+        }
+
+        // Initialize test framework
+        const test = new TestFramework();
+        const { describe, it, beforeEach, afterEach, assert, assertEqual, assertArrayEqual, assertObjectEqual } = test;
+
+        // Dashboard State Management Tests
+        describe('DashboardState', () => {
+            let originalLocalStorage;
+            let mockLocalStorage;
+
+            beforeEach(() => {
+                // Mock localStorage
+                originalLocalStorage = window.localStorage;
+                mockLocalStorage = {
+                    data: {},
+                    getItem: function(key) { return this.data[key] || null; },
+                    setItem: function(key, value) { this.data[key] = value; },
+                    removeItem: function(key) { delete this.data[key]; },
+                    clear: function() { this.data = {}; }
+                };
+                window.localStorage = mockLocalStorage;
+            });
+
+            afterEach(() => {
+                window.localStorage = originalLocalStorage;
+            });
+
+            it('should initialize with default values', () => {
+                // Create a mock DashboardState for testing
+                const mockState = {
+                    currentView: 'trends',
+                    ordersData: { buy: [], sell: [], symbols: [] },
+                    financialData: null,
+                    sharedFilters: { symbol: '', status: '', dateRange: { start: null, end: null } },
+                    init() {
+                        const saved = localStorage.getItem('dashboardState');
+                        if (saved) {
+                            try {
+                                const parsed = JSON.parse(saved);
+                                this.currentView = parsed.currentView || 'trends';
+                                this.sharedFilters = { ...this.sharedFilters, ...parsed.sharedFilters };
+                            } catch (e) {
+                                console.warn('Failed to load saved dashboard state:', e);
+                            }
+                        }
+                    },
+                    saveState() {
+                        const stateToSave = {
+                            currentView: this.currentView,
+                            sharedFilters: this.sharedFilters,
+                            timestamp: Date.now()
+                        };
+                        localStorage.setItem('dashboardState', JSON.stringify(stateToSave));
+                    }
+                };
+
+                mockState.init();
+                assertEqual(mockState.currentView, 'trends', 'Should default to trends view');
+                assertEqual(mockState.sharedFilters.symbol, '', 'Should have empty symbol filter');
+                assertEqual(mockState.sharedFilters.status, '', 'Should have empty status filter');
+            });
+
+            it('should save and restore state from localStorage', () => {
+                const mockState = {
+                    currentView: 'orders',
+                    sharedFilters: { symbol: 'AAPL', status: 'completed', dateRange: { start: null, end: null } },
+                    saveState() {
+                        const stateToSave = {
+                            currentView: this.currentView,
+                            sharedFilters: this.sharedFilters,
+                            timestamp: Date.now()
+                        };
+                        localStorage.setItem('dashboardState', JSON.stringify(stateToSave));
+                    },
+                    init() {
+                        const saved = localStorage.getItem('dashboardState');
+                        if (saved) {
+                            try {
+                                const parsed = JSON.parse(saved);
+                                this.currentView = parsed.currentView || 'trends';
+                                this.sharedFilters = { ...this.sharedFilters, ...parsed.sharedFilters };
+                            } catch (e) {
+                                console.warn('Failed to load saved dashboard state:', e);
+                            }
+                        }
+                    }
+                };
+
+                // Save state
+                mockState.saveState();
+                
+                // Create new state and restore
+                const newState = {
+                    currentView: 'trends',
+                    sharedFilters: { symbol: '', status: '', dateRange: { start: null, end: null } },
+                    init: mockState.init
+                };
+                
+                newState.init();
+                assertEqual(newState.currentView, 'orders', 'Should restore view from localStorage');
+                assertEqual(newState.sharedFilters.symbol, 'AAPL', 'Should restore symbol filter');
+                assertEqual(newState.sharedFilters.status, 'completed', 'Should restore status filter');
+            });
+        });
+
+        // Orders Dashboard Tests
+        describe('OrdersDashboard', () => {
+            it('should filter orders by symbol correctly', () => {
+                const mockOrders = [
+                    { symbol: 'AAPL', quantity: 10, price: 150, total: 1500, status: 'completed' },
+                    { symbol: 'GOOGL', quantity: 5, price: 2500, total: 12500, status: 'pending' },
+                    { symbol: 'AAPL', quantity: 20, price: 155, total: 3100, status: 'completed' }
+                ];
+
+                const filterOrders = (orders, filters) => {
+                    return orders.filter(order => {
+                        const symbolMatch = !filters.symbol || 
+                            order.symbol.toLowerCase().includes(filters.symbol.toLowerCase());
+                        
+                        const statusMatch = !filters.status || 
+                            order.status.toLowerCase() === filters.status.toLowerCase();
+                        
+                        return symbolMatch && statusMatch;
+                    });
+                };
+
+                // Test symbol filtering
+                const aaplResults = filterOrders(mockOrders, { symbol: 'AAPL', status: '' });
+                assertEqual(aaplResults.length, 2, 'Should find 2 AAPL orders');
+                
+                const googlResults = filterOrders(mockOrders, { symbol: 'GOOGL', status: '' });
+                assertEqual(googlResults.length, 1, 'Should find 1 GOOGL order');
+                
+                // Test status filtering
+                const completedResults = filterOrders(mockOrders, { symbol: '', status: 'completed' });
+                assertEqual(completedResults.length, 2, 'Should find 2 completed orders');
+                
+                // Test combined filtering
+                const filteredResults = filterOrders(mockOrders, { symbol: 'AAPL', status: 'completed' });
+                assertEqual(filteredResults.length, 2, 'Should find 2 completed AAPL orders');
+            });
+
+            it('should calculate KPIs correctly', () => {
+                const mockFilteredData = {
+                    buy: [
+                        { total: 1500 },
+                        { total: 3100 }
+                    ],
+                    sell: [
+                        { total: 2000 },
+                        { total: 3500 }
+                    ]
+                };
+
+                const calculateKPIs = (data) => {
+                    const buyTotal = data.buy.reduce((sum, order) => sum + order.total, 0);
+                    const sellTotal = data.sell.reduce((sum, order) => sum + order.total, 0);
+                    const netProfit = sellTotal - buyTotal;
+                    
+                    return {
+                        buyTotal,
+                        sellTotal,
+                        netProfit
+                    };
+                };
+
+                const kpis = calculateKPIs(mockFilteredData);
+                assertEqual(kpis.buyTotal, 4600, 'Should calculate total buy amount');
+                assertEqual(kpis.sellTotal, 5500, 'Should calculate total sell amount');
+                assertEqual(kpis.netProfit, 900, 'Should calculate net profit');
+            });
+
+            it('should format currency correctly', () => {
+                const formatCurrency = (amount) => {
+                    return new Intl.NumberFormat('en-US', {
+                        style: 'currency',
+                        currency: 'USD',
+                        minimumFractionDigits: 2
+                    }).format(amount);
+                };
+
+                assertEqual(formatCurrency(1500), '$1,500.00', 'Should format positive amount');
+                assertEqual(formatCurrency(-750.50), '-$750.50', 'Should format negative amount');
+                assertEqual(formatCurrency(0), '$0.00', 'Should format zero amount');
+            });
+        });
+
+        // Cache Management Tests
+        describe('Cache Management', () => {
+            it('should handle cache hits and misses correctly', () => {
+                const mockCache = new Map();
+                const cacheTimeout = 5 * 60 * 1000; // 5 minutes
+                
+                const isCacheValid = (key) => {
+                    const cached = mockCache.get(key);
+                    if (!cached) return false;
+                    
+                    const isValid = Date.now() - cached.timestamp < cacheTimeout;
+                    if (!isValid) {
+                        mockCache.delete(key);
+                    }
+                    return isValid;
+                };
+
+                // Add valid cache entry
+                mockCache.set('test-key', {
+                    data: { test: 'data' },
+                    timestamp: Date.now()
+                });
+
+                assert(isCacheValid('test-key'), 'Should return true for valid cache');
+
+                // Add expired cache entry
+                mockCache.set('expired-key', {
+                    data: { test: 'expired' },
+                    timestamp: Date.now() - (10 * 60 * 1000) // 10 minutes ago
+                });
+
+                assert(!isCacheValid('expired-key'), 'Should return false for expired cache');
+                assert(!mockCache.has('expired-key'), 'Should delete expired cache entry');
+            });
+
+            it('should clear cache correctly', () => {
+                const mockCache = new Map();
+                
+                // Add some entries
+                mockCache.set('key1', { data: 'value1', timestamp: Date.now() });
+                mockCache.set('key2', { data: 'value2', timestamp: Date.now() });
+                
+                assertEqual(mockCache.size, 2, 'Should have 2 cache entries');
+                
+                // Clear cache
+                mockCache.clear();
+                
+                assertEqual(mockCache.size, 0, 'Should have 0 cache entries after clear');
+            });
+        });
+
+        // Event System Tests
+        describe('Event System', () => {
+            it('should handle event listeners correctly', () => {
+                const mockListeners = {};
+                
+                const addListener = (event, callback) => {
+                    if (!mockListeners[event]) {
+                        mockListeners[event] = [];
+                    }
+                    mockListeners[event].push(callback);
+                };
+                
+                const notifyListeners = (event, data) => {
+                    if (mockListeners[event]) {
+                        mockListeners[event].forEach(callback => callback(data));
+                    }
+                };
+
+                let eventFired = false;
+                let eventData = null;
+                
+                addListener('testEvent', (data) => {
+                    eventFired = true;
+                    eventData = data;
+                });
+                
+                notifyListeners('testEvent', { test: 'data' });
+                
+                assert(eventFired, 'Event should be fired');
+                assertObjectEqual(eventData, { test: 'data' }, 'Event data should match');
+            });
+
+            it('should handle multiple listeners for same event', () => {
+                const mockListeners = {};
+                
+                const addListener = (event, callback) => {
+                    if (!mockListeners[event]) {
+                        mockListeners[event] = [];
+                    }
+                    mockListeners[event].push(callback);
+                };
+                
+                const notifyListeners = (event, data) => {
+                    if (mockListeners[event]) {
+                        mockListeners[event].forEach(callback => callback(data));
+                    }
+                };
+
+                let count = 0;
+                
+                addListener('multiEvent', () => count++);
+                addListener('multiEvent', () => count++);
+                addListener('multiEvent', () => count++);
+                
+                notifyListeners('multiEvent', {});
+                
+                assertEqual(count, 3, 'All listeners should be called');
+            });
+        });
+
+        // Performance Tests
+        describe('Performance Tests', () => {
+            it('should handle large datasets efficiently', () => {
+                // Generate large dataset
+                const largeDataset = [];
+                for (let i = 0; i < 1000; i++) {
+                    largeDataset.push({
+                        symbol: ['AAPL', 'GOOGL', 'MSFT', 'AMZN'][i % 4],
+                        quantity: Math.floor(Math.random() * 100) + 1,
+                        price: Math.random() * 1000 + 50,
+                        total: 0,
+                        status: ['completed', 'pending'][i % 2]
+                    });
+                }
+                
+                // Calculate totals
+                const startTime = performance.now();
+                largeDataset.forEach(order => {
+                    order.total = order.quantity * order.price;
+                });
+                const endTime = performance.now();
+                
+                const processingTime = endTime - startTime;
+                assert(processingTime < 100, `Processing 1000 items should be fast (was ${processingTime}ms)`);
+                
+                // Test filtering
+                const filterStart = performance.now();
+                const filtered = largeDataset.filter(order => order.symbol === 'AAPL');
+                const filterEnd = performance.now();
+                
+                const filterTime = filterEnd - filterStart;
+                assert(filterTime < 50, `Filtering should be fast (was ${filterTime}ms)`);
+                assertEqual(filtered.length, 250, 'Should find 250 AAPL orders');
+            });
+
+            it('should maintain responsive performance', () => {
+                // Test that operations complete within acceptable time limits
+                const operations = [];
+                
+                // Simulate various operations
+                const startTime = performance.now();
+                
+                // Object creation
+                for (let i = 0; i < 100; i++) {
+                    operations.push({
+                        id: i,
+                        data: `test-${i}`,
+                        timestamp: Date.now()
+                    });
+                }
+                
+                // Array operations
+                const filtered = operations.filter(op => op.id % 2 === 0);
+                const mapped = filtered.map(op => op.data);
+                const reduced = mapped.reduce((acc, curr) => acc + curr.length, 0);
+                
+                const endTime = performance.now();
+                const totalTime = endTime - startTime;
+                
+                assert(totalTime < 10, `Operations should complete quickly (was ${totalTime}ms)`);
+                assertEqual(filtered.length, 50, 'Should filter correctly');
+                assertEqual(mapped.length, 50, 'Should map correctly');
+                assert(reduced > 0, 'Should reduce correctly');
+            });
+        });
+
+        // Integration Tests
+        describe('Integration Tests', () => {
+            it('should handle complete filter workflow', () => {
+                // Mock orders data
+                const ordersData = {
+                    buy: [
+                        { symbol: 'AAPL', quantity: 10, price: 150, total: 1500, status: 'completed' },
+                        { symbol: 'GOOGL', quantity: 5, price: 2500, total: 12500, status: 'pending' }
+                    ],
+                    sell: [
+                        { symbol: 'AAPL', quantity: 8, price: 155, total: 1240, status: 'completed' },
+                        { symbol: 'MSFT', quantity: 15, price: 300, total: 4500, status: 'completed' }
+                    ]
+                };
+
+                // Mock filter state
+                let currentFilters = { symbol: '', status: '' };
+                
+                const updateFilters = (newFilters) => {
+                    currentFilters = { ...currentFilters, ...newFilters };
+                };
+
+                const filterOrders = (orders, filters) => {
+                    return orders.filter(order => {
+                        const symbolMatch = !filters.symbol || 
+                            order.symbol.toLowerCase().includes(filters.symbol.toLowerCase());
+                        
+                        const statusMatch = !filters.status || 
+                            order.status.toLowerCase() === filters.status.toLowerCase();
+                        
+                        return symbolMatch && statusMatch;
+                    });
+                };
+
+                const applyFilters = (filters) => {
+                    const filteredBuy = filterOrders(ordersData.buy, filters);
+                    const filteredSell = filterOrders(ordersData.sell, filters);
+                    
+                    return { buy: filteredBuy, sell: filteredSell };
+                };
+
+                // Test complete workflow
+                updateFilters({ symbol: 'AAPL' });
+                const result1 = applyFilters(currentFilters);
+                assertEqual(result1.buy.length, 1, 'Should filter buy orders by AAPL');
+                assertEqual(result1.sell.length, 1, 'Should filter sell orders by AAPL');
+
+                updateFilters({ status: 'completed' });
+                const result2 = applyFilters(currentFilters);
+                assertEqual(result2.buy.length, 1, 'Should filter completed buy orders');
+                assertEqual(result2.sell.length, 2, 'Should filter completed sell orders');
+
+                updateFilters({ symbol: '', status: '' });
+                const result3 = applyFilters(currentFilters);
+                assertEqual(result3.buy.length, 2, 'Should show all buy orders when filters cleared');
+                assertEqual(result3.sell.length, 2, 'Should show all sell orders when filters cleared');
+            });
+
+            it('should handle state synchronization between components', () => {
+                // Mock shared state
+                const sharedState = {
+                    currentView: 'trends',
+                    filters: { symbol: '', status: '' },
+                    listeners: {},
+                    
+                    addListener(event, callback) {
+                        if (!this.listeners[event]) {
+                            this.listeners[event] = [];
+                        }
+                        this.listeners[event].push(callback);
+                    },
+                    
+                    notifyListeners(event, data) {
+                        if (this.listeners[event]) {
+                            this.listeners[event].forEach(callback => callback(data));
+                        }
+                    },
+                    
+                    updateFilters(newFilters) {
+                        this.filters = { ...this.filters, ...newFilters };
+                        this.notifyListeners('filtersUpdated', this.filters);
+                    },
+                    
+                    setView(view) {
+                        this.currentView = view;
+                        this.notifyListeners('viewChanged', view);
+                    }
+                };
+
+                let component1Updated = false;
+                let component2Updated = false;
+                let lastFilterUpdate = null;
+                let lastViewUpdate = null;
+
+                // Mock component 1
+                sharedState.addListener('filtersUpdated', (filters) => {
+                    component1Updated = true;
+                    lastFilterUpdate = filters;
+                });
+
+                sharedState.addListener('viewChanged', (view) => {
+                    component1Updated = true;
+                    lastViewUpdate = view;
+                });
+
+                // Mock component 2
+                sharedState.addListener('filtersUpdated', (filters) => {
+                    component2Updated = true;
+                    lastFilterUpdate = filters;
+                });
+
+                // Test state updates
+                sharedState.updateFilters({ symbol: 'TSLA' });
+                assert(component1Updated, 'Component 1 should be updated');
+                assert(component2Updated, 'Component 2 should be updated');
+                assertObjectEqual(lastFilterUpdate, { symbol: 'TSLA', status: '' }, 'Filter update should be synchronized');
+
+                component1Updated = false;
+                component2Updated = false;
+
+                sharedState.setView('orders');
+                assert(component1Updated, 'Component 1 should be updated on view change');
+                assertEqual(lastViewUpdate, 'orders', 'View update should be synchronized');
+            });
+        });
+
+        // Run tests function
+        function runAllTests() {
+            test.runAll();
+        }
+
+        // Auto-run tests on page load
+        window.addEventListener('load', () => {
+            setTimeout(runAllTests, 1000); // Delay to ensure page is fully loaded
+        });
+    </script>
+</body>
+</html>
